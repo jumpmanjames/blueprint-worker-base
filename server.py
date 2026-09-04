@@ -5,7 +5,7 @@ LIVE_DATA_API_KEY = os.environ.get("LIVE_DATA_API_KEY")
 API_FOOTBALL_KEY = os.environ.get("API_FOOTBALL_KEY")
 
 if not DISCORD_WEBHOOK_URL or not LIVE_DATA_API_KEY or not API_FOOTBALL_KEY:
-    print("Critical environment tokens missing."); sys.exit(1)
+    print("Critical secure tokens missing."); sys.exit(1)
 
 MASTER_BOOKIE_CATALOG = [
     {"key": "soccer_epl", "title": "England Premier League"},
@@ -66,12 +66,11 @@ def send_comprehensive_alert(match_title, ft_odds, h1_odds, o05_odds, imp, true_
             f"* **1st-Half H2H 3-Way:** {h1_odds}\n"
             f"* **Alternative Match Goals:** {o05_odds}\n\n"
             f"* **Target Edge Selection Metric:** Bookie Implied % is {imp:.1%} vs. True % "
-            f"calibration at {true_p:.1%}, delivering an expected edge gap of +{edge:.1%}.\n"
+            f"calibration at {true_p:.1%}, delivering an expected edge gap of +{gap:.1%}.\n"
             f"* **Corridor Validation:** {just}"
         )
     }
-    headers = {"Content-Type": "application/json"}
-    try: requests.post(DISCORD_WEBHOOK_URL, json=payload, headers=headers, timeout=10)
+    try: requests.post(DISCORD_WEBHOOK_URL, json=payload, headers={"Content-Type": "application/json"}, timeout=10)
     except Exception: pass
 
 def fetch_real_live_stats(home_name, away_name):
@@ -107,7 +106,7 @@ def monitor_live_pitches():
     for league in rotation[:3]:
         league_key = league["key"]
         
-        # --- FIXED BULLETPROOF URL PATHWAY ---
+        # --- FIXED HARDCODED URL ENDPOINT WITH BUILT-IN SLASHES ---
         url = f"https://the-odds-api.com{league_key}/odds"
         
         params = {"apiKey": LIVE_DATA_API_KEY, "regions": "eu", "markets": "h2h,totals", "oddsFormat": "decimal"}
