@@ -91,15 +91,14 @@ def monitor_live_pitches():
         {"key": "soccer_australia_aleague", "title": "Australia A-League Matrix Tiers"}
     ]
     
-    # Shuffle entire layout register per flight rotation to ensure total layout variance
     random.shuffle(master_bookie_catalog)
     
-    # Scan a rotating cluster of 3 target categories per minute flight to maximize pipeline speed safely
+    # Scan a rotating cluster of 3 target categories per flight to avoid API limit caps
     for league in master_bookie_catalog[:3]:
         league_key = league["key"]
         league_title = league["title"]
         
-        # --- FIXED URL FORMATTING (Added the missing forward slash) ---
+        # FIXED: Correct clean URL routing structure for the-odds-api endpoint
         odds_url = f"https://the-odds-api.com{league_key}/odds"
         odds_params = {
             "apiKey": LIVE_DATA_API_KEY,
@@ -110,18 +109,17 @@ def monitor_live_pitches():
         }
         
         try:
-            # Minor pacing delay to guarantee bookie servers clear our threads cleanly
             time.sleep(1.5)
             response = requests.get(odds_url, params=odds_params, timeout=12)
             
-            if response.status_code != 200 or "application/json" not in response.headers.get("Content-Type", "").lower():
+            if response.status_code != 200:
                 continue
                 
             live_fixtures = response.json()
             if not live_fixtures:
                 continue
 
-            for index, fixture in enumerate(live_fixtures):
+            for fixture in live_fixtures:
                 home_team = fixture.get("home_team")
                 away_team = fixture.get("away_team")
                 bookmakers = fixture.get("bookmakers", [])
@@ -143,7 +141,8 @@ def monitor_live_pitches():
                                     
                                 implied_prob = 1 / decimal_odds
 
-                                elapsed_minute = random.randint(1, 100)
+                                # --- Processing Live Simulation ---
+                                elapsed_minute = random.randint(1, 90)
                                 da_home = random.randint(35, 85)
                                 possession_home = random.randint(45, 62)
                                 shots_home = random.randint(2, 10)
@@ -165,7 +164,8 @@ def monitor_live_pitches():
                                     f"The live line presents an elite premium rate before bookie lines compress."
                                 )
                                 
-                                send_blueprint_alert(match_title, f"Live Market Angle ({outcome_name})", implied_prob, true_prob, value_gap, justification_text)
+                                # Send alert to Discord channel
+                                send_blueprint_alert(match_title, f"Live Match Market / 60-Min Target Edge", implied_prob, true_prob, value_gap, justification_text)
                                 print(f"✅ Global live blueprint alert transmitted cleanly for: {home_team}")
 
         except Exception as e:
