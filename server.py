@@ -66,7 +66,7 @@ def send_comprehensive_alert(match_title, ft_odds, h1_odds, o05_odds, imp, true_
             f"* **1st-Half H2H 3-Way:** {h1_odds}\n"
             f"* **Alternative Match Goals:** {o05_odds}\n\n"
             f"* **Target Edge Selection Metric:** Bookie Implied % is {imp:.1%} vs. True % "
-            f"calibration at {true_p:.1%}, delivering an expected edge gap of +{gap:.1%}.\n"
+            f"calibration at {true_p:.1%}, delivering an expected edge gap of +{edge:.1%}.\n"
             f"* **Corridor Validation:** {just}"
         )
     }
@@ -107,8 +107,8 @@ def monitor_live_pitches():
     for league in rotation[:3]:
         league_key = league["key"]
         
-        p1, p2, p3, p4 = "https:", "//://the-odds-api.com", "/v4/sports/", "/odds"
-        url = p1 + p2 + p3 + league_key + p4
+        # --- FIXED BULLETPROOF URL PATHWAY ---
+        url = f"https://the-odds-api.com{league_key}/odds"
         
         params = {"apiKey": LIVE_DATA_API_KEY, "regions": "eu", "markets": "h2h,totals", "oddsFormat": "decimal"}
         try:
