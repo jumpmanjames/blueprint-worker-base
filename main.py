@@ -38,7 +38,6 @@ def monitor_live_pitches():
     
     # THE UNLIMITED BET365 GLOBAL LEAGUE DIRECTORY
     master_bookie_catalog = [
-        # UK Mainframes
         {"key": "soccer_epl", "title": "England Premier League"},
         {"key": "soccer_england_championship", "title": "England Championship"},
         {"key": "soccer_england_league1", "title": "England League 1"},
@@ -46,7 +45,6 @@ def monitor_live_pitches():
         {"key": "soccer_england_efl_cup", "title": "England EFL Cup"},
         {"key": "soccer_scotland_premier", "title": "Scotland Premiership"},
         {"key": "soccer_scotland_championship", "title": "Scotland Championship"},
-        # Western Europe Tiers
         {"key": "soccer_spain_la_liga", "title": "Spain La Liga"},
         {"key": "soccer_spain_segunda_division", "title": "Spain Segunda"},
         {"key": "soccer_italy_serie_a", "title": "Italy Serie A"},
@@ -58,7 +56,6 @@ def monitor_live_pitches():
         {"key": "soccer_france_ligue_two", "title": "France Ligue 2"},
         {"key": "soccer_netherlands_eredivisie", "title": "Netherlands Eredivisie"},
         {"key": "soccer_portugal_primeira_liga", "title": "Portugal Primeira Liga"},
-        # Central & Eastern Europe
         {"key": "soccer_austria_bundesliga", "title": "Austria Bundesliga"},
         {"key": "soccer_belgium_first_div", "title": "Belgium First Division A"},
         {"key": "soccer_bulgaria_first_league", "title": "Bulgaria First League"},
@@ -76,14 +73,12 @@ def monitor_live_pitches():
         {"key": "soccer_sweden_allsvenskan", "title": "Sweden Allsvenskan"},
         {"key": "soccer_switzerland_superleague", "title": "Switzerland Super League"},
         {"key": "soccer_turkey_super_lig", "title": "Türkiye Super Lig"},
-        # The Americas
         {"key": "soccer_usa_mls", "title": "USA MLS"},
         {"key": "soccer_mexico_ligamx", "title": "Mexico Liga MX"},
         {"key": "soccer_brazil_campeonato", "title": "Brazil Serie A"},
         {"key": "soccer_argentina_primavera", "title": "Argentina Liga Profesional"},
         {"key": "soccer_chile_campeonato", "title": "Chile Liga de Primera"},
         {"key": "soccer_colombia_primera_a", "title": "Colombia Primera A"},
-        # Rest of the World
         {"key": "soccer_china_super_league", "title": "China Super League"},
         {"key": "soccer_japan_j_league", "title": "Japan J-League"},
         {"key": "soccer_south_korea_k_league_1", "title": "South Korea K League 1"},
@@ -93,12 +88,9 @@ def monitor_live_pitches():
     
     random.shuffle(master_bookie_catalog)
     
-    # Scan a rotating cluster of 3 target categories per flight to avoid API limit caps
     for league in master_bookie_catalog[:3]:
         league_key = league["key"]
         league_title = league["title"]
-        
-        # FIXED: Correct clean URL routing structure for the-odds-api endpoint
         odds_url = f"https://the-odds-api.com{league_key}/odds"
         odds_params = {
             "apiKey": LIVE_DATA_API_KEY,
@@ -111,10 +103,8 @@ def monitor_live_pitches():
         try:
             time.sleep(1.5)
             response = requests.get(odds_url, params=odds_params, timeout=12)
-            
             if response.status_code != 200:
                 continue
-                
             live_fixtures = response.json()
             if not live_fixtures:
                 continue
@@ -123,36 +113,29 @@ def monitor_live_pitches():
                 home_team = fixture.get("home_team")
                 away_team = fixture.get("away_team")
                 bookmakers = fixture.get("bookmakers", [])
-                
                 if not bookmakers:
                     continue
                 
                 for bookmaker in bookmakers:
                     book_name = bookmaker.get("title", "Bet365")
-                    
                     for market in bookmaker.get("markets", []):
                         if market.get("key") in ["h2h", "h2h_3way"]:
                             for outcome in market.get("outcomes", []):
                                 decimal_odds = outcome.get("price")
                                 outcome_name = outcome.get("name")
-                                
                                 if not decimal_odds or decimal_odds <= 1:
                                     continue
-                                    
                                 implied_prob = 1 / decimal_odds
 
-                                # --- Processing Live Simulation ---
                                 elapsed_minute = random.randint(1, 90)
                                 da_home = random.randint(35, 85)
                                 possession_home = random.randint(45, 62)
                                 shots_home = random.randint(2, 10)
-                                
                                 xg_home = round(random.uniform(0.50, 2.90), 2)
                                 xg_away = round(random.uniform(0.10, 1.45), 2)
                                 
                                 time_label = "⏸️ AT HALFTIME" if elapsed_minute == 45 else f"Live {elapsed_minute}th Min"
                                 match_title = f"{home_team} vs. {away_team} ({league_title}) — {time_label} on {book_name}"
-                                
                                 true_prob = round(random.uniform(0.58, 0.76), 3)
                                 value_gap = round(true_prob - implied_prob, 3)
                                 
@@ -164,7 +147,6 @@ def monitor_live_pitches():
                                     f"The live line presents an elite premium rate before bookie lines compress."
                                 )
                                 
-                                # Send alert to Discord channel
                                 send_blueprint_alert(match_title, f"Live Match Market / 60-Min Target Edge", implied_prob, true_prob, value_gap, justification_text)
                                 print(f"✅ Global live blueprint alert transmitted cleanly for: {home_team}")
 
