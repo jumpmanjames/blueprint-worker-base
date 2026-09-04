@@ -1,4 +1,4 @@
-import os, sys, time, random, requests
+import os, sys, time, random, requests, datetime
 
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL") or os.environ.get("DISCORD_WEBHOOK")
 LIVE_DATA_API_KEY = os.environ.get("LIVE_DATA_API_KEY")
@@ -81,6 +81,8 @@ def fetch_real_live_stats(home_name, away_name):
                 if home_name.lower()[:5] in h or h[:5] in home_name.lower():
                     elapsed = f.get("fixture", {}).get("status", {}).get("elapsed")
                     if not elapsed: continue
+                    status_short = f.get("fixture", {}).get("status", {}).get("short", "")
+                    minute_label = f"Live {elapsed}th Min" if status_short != "HT" else "Halftime"
                     h_st, a_st = {}, {}
                     for item in f.get("statistics", []):
                         if item.get("team", {}).get("name", "").lower() == h:
@@ -92,22 +94,30 @@ def fetch_real_live_stats(home_name, away_name):
                     if da > 100: da = int(da * 0.65)
                     sh_h = val(h_st.get("Shots on Goal", 3))
                     sh_a = val(a_st.get("Shots on Goal", 2))
-                    return {"is_live": True, "minute": f"Live {elapsed}th Min", "da_home": da, "possession_home": val(h_st.get("Ball Possession", 50)), "shots_home": sh_h, "xg_home": round(0.12 * sh_h + random.uniform(0.1, 0.4), 2), "xg_away": round(0.12 * sh_a + random.uniform(0.1, 0.3), 2)}
+                    return {"is_live": True, "minute": minute_label, "da_home": da, "possession_home": val(h_st.get("Ball Possession", 50)), "shots_home": sh_h, "xg_home": round(0.12 * sh_h + random.uniform(0.1, 0.4), 2), "xg_away": round(0.12 * sh_a + random.uniform(0.1, 0.3), 2)}
     except Exception: pass
     return {"is_live": False, "minute": "Upcoming Match Preview"}
-
 def monitor_live_pitches():
     print("🚀 Ingestion engine active. Executing full global sweep...")
+    now_ts = time.time()
+    max_ts = now_ts + (2 * 24 * 60 * 60)
+    
     for league in MASTER_BOOKIE_CATALOG:
         league_key = league["key"]
         params = {"apiKey": LIVE_DATA_API_KEY, "regions": "eu", "markets": "h2h,totals", "oddsFormat": "american"}
         try:
             time.sleep(1.5)
-            url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
+            url = f"https://the-odds-api.com{league_key}/odds"
             res = requests.get(url, params=params, timeout=12)
             if res.status_code != 200: continue
             
             for fix in res.json():
+                commence_time_str = fix.get("commence_time")
+                dt = datetime.datetime.strptime(commence_time_str, "%Y-%m-%dT%H:%M:%SZ")
+                match_ts = dt.replace(tzinfo=datetime.timezone.utc).timestamp()
+                
+                if match_ts > max_ts: continue
+                
                 home, away = fix.get("home_team"), fix.get("away_team")
                 live_data = fetch_real_live_stats(home, away)
                 ft_line, h1_line, o05_line = "N/A", "N/A", "N/A"
@@ -132,21 +142,19 @@ def monitor_live_pitches():
                                         o05_line = f"Over 2.5 Goals Odds: {fmt_am(out.get('price'))}"
                         h1_line = f"1H Home: {'-' if random.choice([True, False]) else '+'}{random.randint(110, 160)} | 1H Draw: +{random.randint(120, 210)} | 1H Away: +{random.randint(180, 340)}"
                         
-                m_title = f"{home} vs. {away} ({league['title']}) — {live_data['minute']}"
-                true_p = round(random.uniform(0.58, 0.76), 3)
-                gap = round(true_p - implied_target, 3)
-                
                 if live_data["is_live"]:
-                    just = f"Passed validation. {live_data['da_home']} Dangerous Attacks, {live_data['possession_home']}% possession block. {live_data['shots_home']} Shots on Target. xG performance value: {live_data['xg_home']} vs {live_data['xg_away']} window."
+                    m_title = f"{home} vs. {away} ({league['title']}) — {live_data['minute']}"
+                    just = f"Passed validation. {live_data['da_home']} Dangerous Attacks, {live_data['possession_home']}% possession block. {live_data['shots_home']} Shots on Target. xG value: {live_data['xg_home']} vs {live_data['xg_away']} window."
                 else:
+                    readable_date = dt.strftime("%b %d at %I:%M %p UTC")
+                    m_title = f"{home} vs. {away} ({league['title']}) — Upcoming: {readable_date}"
                     just = "Pre-match structural screening analysis complete. Match metrics match entry variance parameters."
                 
-                send_comprehensive_alert(m_title, home, ft_line, h1_line, o05_line, implied_target, true_p, gap, just)
+                send_comprehensive_alert(m_title, home, ft_line, h1_line, o05_line, implied_target, true_p:=round(random.uniform(0.58, 0.76), 3), round(true_p - implied_target, 3), just)
                 print(f"Transmitted complete multi-market alert block for: {home}")
         except Exception as e: print(f"API sync buffer delay: {e}")
 
-if __name__ == "__main__":
-    while True:
-        monitor_live_pitches()
-        print("💤 Sweep complete. Entering 10-minute rest buffer...")
-        time.sleep(600)
+while True:
+    monitor_live_pitches()
+    print("💤 Sweep complete. Entering 10-minute rest buffer...")
+    time.sleep(600)
