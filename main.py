@@ -78,10 +78,10 @@ def monitor_live_pitches():
     url = "https://the-odds-api.com"
     params = {
         "apiKey": LIVE_DATA_API_KEY,
-        "regions": "us",
-        "markets": "h2h",
+        "regions": "eu",      # Swapping 'us' to 'eu' to unlock massive global soccer boards completely unblocked
+        "markets": "h2h",     # Keeps tracking the main Moneyline price discrepancies
         "oddsFormat": "decimal",
-        "inPlay": "true"
+        "inPlay": "true"      # Remains strictly locked on active live-in-play matches
     }
     
     try:
