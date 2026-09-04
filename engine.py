@@ -107,7 +107,7 @@ def monitor_live_pitches():
         params = {"apiKey": LIVE_DATA_API_KEY, "regions": "eu", "markets": "h2h,totals", "oddsFormat": "american"}
         try:
             time.sleep(1.5)
-            url = f"https://the-odds-api.com{league_key}/odds"
+            url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
             res = requests.get(url, params=params, timeout=12)
             if res.status_code != 200: continue
             
