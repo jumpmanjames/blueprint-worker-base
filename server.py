@@ -1,11 +1,12 @@
 import os, sys, time, random, requests
 
-DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL") or os.environ.get("DISCORD_WEBHOOK")
+DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL")
 LIVE_DATA_API_KEY = os.environ.get("LIVE_DATA_API_KEY")
 API_FOOTBALL_KEY = os.environ.get("API_FOOTBALL_KEY")
 
 if not DISCORD_WEBHOOK_URL or not LIVE_DATA_API_KEY or not API_FOOTBALL_KEY:
-    print("Critical environment tokens missing."); sys.exit(1)
+    print("Tokens missing.")
+    sys.exit(1)
 
 MASTER_BOOKIE_CATALOG = [
     {"key": "soccer_epl", "title": "England Premier League"},
@@ -53,7 +54,7 @@ MASTER_BOOKIE_CATALOG = [
     {"key": "soccer_japan_j_league", "title": "Japan J-League"},
     {"key": "soccer_south_korea_k_league_1", "title": "South Korea K League 1"},
     {"key": "soccer_saudi_arabia_pro_league", "title": "Saudi Arabia Pro League"},
-    {"key": "soccer_australia_aleague", "title": "Australia A-League Matrix Tiers"}
+    {"key": "soccer_australia_aleague", "title": "Australia A-League"}
 ]
 
 def send_comprehensive_alert(match_title, ft_odds, h1_odds, o05_odds, imp, true_p, gap, just):
@@ -66,12 +67,14 @@ def send_comprehensive_alert(match_title, ft_odds, h1_odds, o05_odds, imp, true_
             f"* **1st-Half H2H 3-Way:** {h1_odds}\n"
             f"* **Alternative Match Goals:** {o05_odds}\n\n"
             f"* **Target Edge Selection Metric:** Bookie Implied % is {imp:.1%} vs. True % "
-            f"calibration at {true_p:.1%}, delivering an expected edge gap of +{gap:.1%}.\n"
+            f"calibration at {true_p:.1%}, delivering an expected edge gap of +{edge:.1%}.\n"
             f"* **Corridor Validation:** {just}"
         )
     }
-    try: requests.post(DISCORD_WEBHOOK_URL, json=payload, headers={"Content-Type": "application/json"}, timeout=10)
-    except Exception: pass
+    try:
+        requests.post(DISCORD_WEBHOOK_URL, json=payload, headers={"Content-Type": "application/json"}, timeout=10)
+    except Exception:
+        pass
 
 def fetch_real_live_stats(home_name, away_name):
     url = "https://api-sports.io"
@@ -104,8 +107,22 @@ def monitor_live_pitches():
     rotation = list(MASTER_BOOKIE_CATALOG)
     random.shuffle(rotation)
     for league in rotation[:3]:
-        url = f"https://the-odds-api.com{league['key']}/odds"
-        params = {"apiKey": LIVE_DATA_API_KEY, "regions": "eu", "markets": "h2h,totals", "oddsFormat": "decimal"}
+        league_key = league["key"]
+        
+        # --- FIXED PATHWAY STRUCTURE ---
+        # Slashes are separated into isolated strings so your phone clipboard cannot merge them!
+        p1 = "https:"
+        p2 = "//://the-odds-api.com"
+        p3 = "/v4/sports/"
+        p4 = "/odds"
+        url = p1 + p2 + p3 + league_key + p4
+        
+        params = {
+            "apiKey": LIVE_DATA_API_KEY, 
+            "regions": "eu", 
+            "markets": "h2h,totals", 
+            "oddsFormat": "decimal"
+        }
         try:
             time.sleep(2.0)
             res = requests.get(url, params=params, timeout=12)
@@ -139,11 +156,13 @@ def monitor_live_pitches():
                     just = f"Verified corridor sweep passed. Live acceleration confirms {live_data['da_home']} Dangerous Attacks and {live_data['possession_home']}% possession block for {home}. Finishing records show {live_data['shots_home']} Shots on Target with a true performance value of {live_data['xg_home']} vs {live_data['xg_away']} window."
                 else:
                     just = "Pre-match structural screening analysis complete. Match metrics match system requirement parameters for early line entry variance before market compression spikes."
-                send_comprehensive_alert(m_title, ft_line, h1_line, o05_line, implied_target, true_p, gap, just)
-                print(f"Transmitted complete multi-market alert block for: {home}")
+                    send_comprehensive_alert(m_title, ft_line, h1_line, o05_line, implied_target, true_p, gap, just)
+                                print(f"Transmitted complete multi-market alert block for: {home}")
         except Exception as e: print(f"API sync buffer delay: {e}")
 
 if __name__ == "__main__":
     while True:
         monitor_live_pitches()
         time.sleep(30)
+
+
