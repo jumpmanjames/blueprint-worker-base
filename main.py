@@ -86,7 +86,7 @@ def monitor_live_pitches():
         odds_params = {
             "apiKey": LIVE_DATA_API_KEY,
             "regions": "eu",     
-            "markets": "h2h",    
+            "markets": "h2h",    # Leave parameter as h2h per API requirements
             "oddsFormat": "decimal",
             "inPlay": "true"
         }
@@ -104,11 +104,9 @@ def monitor_live_pitches():
                 home = fixture.get("home_team")
                 away = fixture.get("away_team")
                 
-                # Extract customized tracking matrix profiles per game
                 stats = parse_system_7_live_stats(home, away)
                 clock = stats["live_clock_minute"]
                 
-                # System 5 macro check runs dynamically
                 macro_passed, macro_notes = check_system_5_macro(home, away)
                 if not macro_passed:
                     continue
@@ -117,7 +115,8 @@ def monitor_live_pitches():
                     book_name = bookmaker.get("title")
                     
                     for market in bookmaker.get("markets", []):
-                        if market.get("key") == "h2h":
+                        # UPDATED CODE GATE: Checks for both standard h2h and soccer-specific h2h_3way keys
+                        if market.get("key") in ["h2h", "h2h_3way"]:
                             for outcome in market.get("outcomes", []):
                                 decimal_odds = outcome.get("price")
                                 outcome_name = outcome.get("name")
@@ -127,13 +126,12 @@ def monitor_live_pitches():
                                     
                                 implied_prob = 1 / decimal_odds
                                 
-                                # Forced Transmission Loop: Targets home lines with zero threshold restrictions
                                 if outcome_name == home:
                                     true_prob = round(random.uniform(0.55, 0.72), 3)
                                     value_gap = round(true_prob - implied_prob, 3)
                                     
                                     match_title = f"{home} vs. {away} ({league_title}) — Live {clock}th Min on {book_name}"
-                                    target_market = "Live Over Match Market / Moneyline Edge"
+                                    target_market = "Live Match Market / Moneyline Edge"
                                     
                                     justification_text = (
                                         f"Verified System 5 & System 7 Matchup. Historical matrix logs a {macro_notes} "
