@@ -36,12 +36,12 @@ def monitor_live_pitches():
     """Main algorithmic core tracking every live fixture globally across all 100 minutes."""
     print("🚀 Ingestion engine active. Scanning all global live markets via RapidAPI Route...")
     
-    # UNBLOCKED URL ROUTE: Moves traffic through the RapidAPI layer to skip Cloudflare challenges
     url = "https://rapidapi.com"
     
+    # FIXED HEADERS: Capitalized standard keys to match strict RapidAPI proxy server processing rules
     headers = {
-        "x-rapidapi-key": FOOTBALL_API_KEY,
-        "x-rapidapi-host": "://rapidapi.com"
+        "X-RapidAPI-Key": FOOTBALL_API_KEY,
+        "X-RapidAPI-Host": "://rapidapi.com"
     }
     params = {
         "live": "all"
