@@ -142,10 +142,9 @@ def monitor_live_pitches():
                                     continue
                                     
                                 implied_prob = 1 / decimal_odds
-                                
-                                # --- PRODUCTION TELEMETRY CONTEXT ENGINE ---
-                                # Binds unique in-play metrics cleanly to active global match identities
-                                random.seed(len(home_team) + index + int(time.time() // 60))
+
+except Exception as e:
+    print(f"❌ Error in preceding block: {e}")
 
 elapsed_minute = random.randint(1, 100)
 da_home = random.randint(35, 85)
@@ -176,4 +175,5 @@ print(f"✅ Global live blueprint alert transmitted cleanly for: {home_team}")
 if __name__ == "__main__":
     while True:
         monitor_live_pitches()
-        time.sleep(30)
+        time.sleep(30)                                
+                                
