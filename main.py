@@ -26,7 +26,7 @@ def send_blueprint_alert(match_title, target_market, implied, true, edge, justif
     }
     headers = {"Content-Type": "application/json"}
     try:
-        response = requests.post(DISCORD_WEBHOOK_URL, data=json.dumps(payload), headers=headers)
+        response = requests.post(DISCORD_WEBHOOK_URL, json=payload, headers=headers)
         return response.status_code
     except Exception as e:
         print(f"⚠️ Webhook transmission failure: {e}")
@@ -42,18 +42,27 @@ def monitor_live_pitches():
         "x-rapidapi-host": "v3.football.api-sports.io"
     }
     params = {
-        "live": "all" # Fetches every single match currently running in real-time
+        "live": "all"
     }
     
     try:
         response = requests.get(url, headers=headers, params=params)
+        
+        # Enhanced diagnostic reporting block to debug authentication locks
         if response.status_code != 200:
             print(f"⚠️ Live stat pull failure. HTTP Status Code: {response.status_code}")
+            print(f"🔍 API Server Error Context: {response.text}")
             return
             
         data = response.json()
-        fixtures = data.get("response", [])
         
+        # Check if the API returned an explicit internal error message within an HTTP 200 payload
+        if data.get("errors"):
+            print(f"❌ API Internal Security Error String: {json.dumps(data.get('errors'))}")
+            print("💡 Tip: Verify your API-Football subscription dashboard activation status.")
+            return
+
+        fixtures = data.get("response", [])
         print(f"📡 API Checked. Successfully found {len(fixtures)} matches currently live worldwide.")
         
         for item in fixtures:
@@ -62,8 +71,6 @@ def monitor_live_pitches():
             short_status = status.get("short")
             elapsed_time = status.get("elapsed") or 0
             
-            # --- FULL TIME GATING WINDOW (1 to 100 Minutes + Halftime) ---
-            # Catches everything: active match minutes and explicit halftime states
             if (1 <= elapsed_time <= 100) or short_status == "HT":
                 league = item.get("league", {})
                 league_name = league.get("name", "Unknown League")
@@ -72,9 +79,7 @@ def monitor_live_pitches():
                 home_team = teams.get("home", {}).get("name", "Home")
                 away_team = teams.get("away", {}).get("name", "Away")
                 
-                # --- SYSTEM 7: REAL-TIME TELEMETRY MATRIX INGESTION ---
                 statistics = item.get("statistics", [])
-                
                 da_home, da_away = 0, 0
                 shots_home, shots_away = 0, 0
                 possession_home = "50%"
@@ -96,18 +101,15 @@ def monitor_live_pitches():
                         elif s_type == "Ball Possession":
                             if team_side == home_team: possession_home = str(s_val)
 
-                # Fetch real expected goals (xG) metrics if league provides them, else fallback to model math
                 import random
                 xg_home = round(random.uniform(0.40, 2.10), 2)
                 xg_away = round(random.uniform(0.10, 1.30), 2)
                 
-                # Dynamic Clock Formatting based on match status
                 if short_status == "HT":
                     time_label = "⏸️ AT HALFTIME"
                 else:
                     time_label = f"Live {elapsed_time}th Min"
                 
-                # --- SYSTEM 1: CALCULUS SPREADS ---
                 implied_prob = 0.455  
                 true_prob = 0.625     
                 value_gap = true_prob - implied_prob
