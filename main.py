@@ -106,7 +106,7 @@ def monitor_live_pitches():
             "regions": "eu",     
             "markets": "h2h",    
             "oddsFormat": "decimal",
-            "inPlay": "true"      # Continuously tracks live action across all 100 minutes of play
+            "inPlay": "true"
         }
         
         try:
@@ -166,7 +166,14 @@ def monitor_live_pitches():
                                     f"Live System 7 threat tracking confirms intense threat acceleration with {da_home} Dangerous Attacks "
                                     f"and a {possession_home}% possession block for {home_team}. Finalized threat finishing matrix records "
                                     f"{shots_home} Shots on Target with a verified true xG performance of {xg_home} vs {xg_away}. "
-                                    f"The live line presents an elite premium entry window."
+                                    f"The live line presents an elite premium rate before bookie lines compress."
                                 )
                                 
                                 send_blueprint_alert(match_title, f"Live Market Angle ({outcome_name})", implied_prob, true_prob, value_gap, justification_text)
+
+print(f"✅ Global live blueprint alert transmitted cleanly for: {home_team}")
+
+if __name__ == "__main__":
+    while True:
+        monitor_live_pitches()
+        time.sleep(30)
