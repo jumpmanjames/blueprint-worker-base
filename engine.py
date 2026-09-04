@@ -146,9 +146,12 @@ def monitor_live_pitches():
                     m_title = f"{home} vs. {away} ({league['title']}) — {live_data['minute']}"
                     just = f"Passed validation. {live_data['da_home']} Dangerous Attacks, {live_data['possession_home']}% possession block. {live_data['shots_home']} Shots on Target. xG value: {live_data['xg_home']} vs {live_data['xg_away']} window."
                 else:
-                    readable_date = dt.strftime("%b %d at %I:%M %p UTC")
-                    m_title = f"{home} vs. {away} ({league['title']}) — Upcoming: {readable_date}"
+                    c_dt = dt - datetime.timedelta(hours=5)
+                    r_date = c_dt.strftime("%b %d at %I:%M %p Central")
+                    m_title = f"{home} vs. {away} ({league['title']}) — Upcoming: {r_date}"
                     just = "Pre-match structural screening analysis complete. Match metrics match entry variance parameters."
+
+                    
                 
                 send_comprehensive_alert(m_title, home, ft_line, h1_line, o05_line, implied_target, true_p:=round(random.uniform(0.58, 0.76), 3), round(true_p - implied_target, 3), just)
                 print(f"Transmitted complete multi-market alert block for: {home}")
