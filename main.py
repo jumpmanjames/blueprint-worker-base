@@ -12,6 +12,56 @@ if not DISCORD_WEBHOOK_URL or not LIVE_DATA_API_KEY:
     print("❌ Critical System Error: Secure environment variables missing.")
     sys.exit(1)
 
+# Global register placed outside functions to completely bypass mobile indentation errors
+MASTER_BOOKIE_CATALOG = [
+    {"key": "soccer_epl", "title": "England Premier League"},
+    {"key": "soccer_england_championship", "title": "England Championship"},
+    {"key": "soccer_england_league1", "title": "England League 1"},
+    {"key": "soccer_england_league2", "title": "England League 2"},
+    {"key": "soccer_england_efl_cup", "title": "England EFL Cup"},
+    {"key": "soccer_scotland_premier", "title": "Scotland Premiership"},
+    {"key": "soccer_scotland_championship", "title": "Scotland Championship"},
+    {"key": "soccer_spain_la_liga", "title": "Spain La Liga"},
+    {"key": "soccer_spain_segunda_division", "title": "Spain Segunda"},
+    {"key": "soccer_italy_serie_a", "title": "Italy Serie A"},
+    {"key": "soccer_italy_serie_b", "title": "Italy Serie B"},
+    {"key": "soccer_germany_bundesliga", "title": "Germany Bundesliga I"},
+    {"key": "soccer_germany_bundesliga2", "title": "Germany Bundesliga II"},
+    {"key": "soccer_germany_3liga", "title": "Germany 3.Liga"},
+    {"key": "soccer_france_ligue_one", "title": "France Ligue 1"},
+    {"key": "soccer_france_ligue_two", "title": "France Ligue 2"},
+    {"key": "soccer_netherlands_eredivisie", "title": "Netherlands Eredivisie"},
+    {"key": "soccer_portugal_primeira_liga", "title": "Portugal Primeira Liga"},
+    {"key": "soccer_austria_bundesliga", "title": "Austria Bundesliga"},
+    {"key": "soccer_belgium_first_div", "title": "Belgium First Division A"},
+    {"key": "soccer_bulgaria_first_league", "title": "Bulgaria First League"},
+    {"key": "soccer_croatia_hnl", "title": "Croatia HNL"},
+    {"key": "soccer_czech_republic_first_league", "title": "Czechia First League"},
+    {"key": "soccer_denmark_superliga", "title": "Denmark Superligaen"},
+    {"key": "soccer_greece_super_league", "title": "Greece Super League 1"},
+    {"key": "soccer_hungary_nb1", "title": "Hungary NB I"},
+    {"key": "soccer_norway_eliteserien", "title": "Norway Eliteserien"},
+    {"key": "soccer_poland_ekstraklasa", "title": "Poland Ekstraklasa"},
+    {"key": "soccer_romania_liga1", "title": "Romania Liga I"},
+    {"key": "soccer_serbia_super_liga", "title": "Serbia Super Liga"},
+    {"key": "soccer_slovakia_super_liga", "title": "Slovakia Super Liga"},
+    {"key": "soccer_slovenia_prva_liga", "title": "Slovenia Prva Liga"},
+    {"key": "soccer_sweden_allsvenskan", "title": "Sweden Allsvenskan"},
+    {"key": "soccer_switzerland_superleague", "title": "Switzerland Super League"},
+    {"key": "soccer_turkey_super_lig", "title": "Türkiye Super Lig"},
+    {"key": "soccer_usa_mls", "title": "USA MLS"},
+    {"key": "soccer_mexico_ligamx", "title": "Mexico Liga MX"},
+    {"key": "soccer_brazil_campeonato", "title": "Brazil Serie A"},
+    {"key": "soccer_argentina_primavera", "title": "Argentina Liga Profesional"},
+    {"key": "soccer_chile_campeonato", "title": "Chile Liga de Primera"},
+    {"key": "soccer_colombia_primera_a", "title": "Colombia Primera A"},
+    {"key": "soccer_china_super_league", "title": "China Super League"},
+    {"key": "soccer_japan_j_league", "title": "Japan J-League"},
+    {"key": "soccer_south_korea_k_league_1", "title": "South Korea K League 1"},
+    {"key": "soccer_saudi_arabia_pro_league", "title": "Saudi Arabia Pro League"},
+    {"key": "soccer_australia_aleague", "title": "Australia A-League Matrix Tiers"}
+]
+
 def send_blueprint_alert(match_title, target_market, implied, true, edge, justification):
     """Transmits the strict three-bullet blueprint layout directly to your Discord channel."""
     payload = {
@@ -33,62 +83,14 @@ def send_blueprint_alert(match_title, target_market, implied, true, edge, justif
         return None
 
 def monitor_live_pitches():
-    """Main production matrix looping directly over your entire 100+ Bet365 catalog."""
+    """Main production matrix looping directly over active global catalogs."""
     print("🚀 Ingestion engine active. Executing global multi-league sweep...")
     
-    # THE UNLIMITED BET365 GLOBAL LEAGUE DIRECTORY
-    master_bookie_catalog = [
-        {"key": "soccer_epl", "title": "England Premier League"},
-        {"key": "soccer_england_championship", "title": "England Championship"},
-        {"key": "soccer_england_league1", "title": "England League 1"},
-        {"key": "soccer_england_league2", "title": "England League 2"},
-        {"key": "soccer_england_efl_cup", "title": "England EFL Cup"},
-        {"key": "soccer_scotland_premier", "title": "Scotland Premiership"},
-        {"key": "soccer_scotland_championship", "title": "Scotland Championship"},
-        {"key": "soccer_spain_la_liga", "title": "Spain La Liga"},
-        {"key": "soccer_spain_segunda_division", "title": "Spain Segunda"},
-        {"key": "soccer_italy_serie_a", "title": "Italy Serie A"},
-        {"key": "soccer_italy_serie_b", "title": "Italy Serie B"},
-        {"key": "soccer_germany_bundesliga", "title": "Germany Bundesliga I"},
-        {"key": "soccer_germany_bundesliga2", "title": "Germany Bundesliga II"},
-        {"key": "soccer_germany_3liga", "title": "Germany 3.Liga"},
-        {"key": "soccer_france_ligue_one", "title": "France Ligue 1"},
-        {"key": "soccer_france_ligue_two", "title": "France Ligue 2"},
-        {"key": "soccer_netherlands_eredivisie", "title": "Netherlands Eredivisie"},
-        {"key": "soccer_portugal_primeira_liga", "title": "Portugal Primeira Liga"},
-        {"key": "soccer_austria_bundesliga", "title": "Austria Bundesliga"},
-        {"key": "soccer_belgium_first_div", "title": "Belgium First Division A"},
-        {"key": "soccer_bulgaria_first_league", "title": "Bulgaria First League"},
-        {"key": "soccer_croatia_hnl", "title": "Croatia HNL"},
-        {"key": "soccer_czech_republic_first_league", "title": "Czechia First League"},
-        {"key": "soccer_denmark_superliga", "title": "Denmark Superligaen"},
-        {"key": "soccer_greece_super_league", "title": "Greece Super League 1"},
-        {"key": "soccer_hungary_nb1", "title": "Hungary NB I"},
-        {"key": "soccer_norway_eliteserien", "title": "Norway Eliteserien"},
-        {"key": "soccer_poland_ekstraklasa", "title": "Poland Ekstraklasa"},
-        {"key": "soccer_romania_liga1", "title": "Romania Liga I"},
-        {"key": "soccer_serbia_super_liga", "title": "Serbia Super Liga"},
-        {"key": "soccer_slovakia_super_liga", "title": "Slovakia Super Liga"},
-        {"key": "soccer_slovenia_prva_liga", "title": "Slovenia Prva Liga"},
-        {"key": "soccer_sweden_allsvenskan", "title": "Sweden Allsvenskan"},
-        {"key": "soccer_switzerland_superleague", "title": "Switzerland Super League"},
-        {"key": "soccer_turkey_super_lig", "title": "Türkiye Super Lig"},
-        {"key": "soccer_usa_mls", "title": "USA MLS"},
-        {"key": "soccer_mexico_ligamx", "title": "Mexico Liga MX"},
-        {"key": "soccer_brazil_campeonato", "title": "Brazil Serie A"},
-        {"key": "soccer_argentina_primavera", "title": "Argentina Liga Profesional"},
-        {"key": "soccer_chile_campeonato", "title": "Chile Liga de Primera"},
-        {"key": "soccer_colombia_primera_a", "title": "Colombia Primera A"},
-        {"key": "soccer_china_super_league", "title": "China Super League"},
-        {"key": "soccer_japan_j_league", "title": "Japan J-League"},
-        {"key": "soccer_south_korea_k_league_1", "title": "South Korea K League 1"},
-        {"key": "soccer_saudi_arabia_pro_league", "title": "Saudi Arabia Pro League"},
-        {"key": "soccer_australia_aleague", "title": "Australia A-League Matrix Tiers"}
-    ]
+    # Shuffle local working register list cleanly inside the run block
+    active_rotation = list(MASTER_BOOKIE_CATALOG)
+    random.shuffle(active_rotation)
     
-    random.shuffle(master_bookie_catalog)
-    
-    for league in master_bookie_catalog[:3]:
+    for league in active_rotation[:3]:
         league_key = league["key"]
         league_title = league["title"]
         odds_url = f"https://the-odds-api.com{league_key}/odds"
@@ -141,10 +143,10 @@ def monitor_live_pitches():
                                 
                                 justification_text = (
                                     f"Verified System 5 & System 7 Matchup. Master league matrix corridor sweep validation passed. "
-                                    f"Live System 7 threat tracking confirms intense threat acceleration with {da_home} Dangerous Attacks "
+                                    f"Live System 7 threat tracking confirms intense pressure corridor with {da_home} Dangerous Attacks "
                                     f"and a {possession_home}% possession block for {home_team}. Finalized threat finishing matrix records "
                                     f"{shots_home} Shots on Target with a verified true xG performance of {xg_home} vs {xg_away}. "
-                                    f"The live line presents an elite premium rate before bookie lines compress."
+                                    f"The live line presents an elite high-yield value window."
                                 )
                                 
                                 send_blueprint_alert(match_title, f"Live Match Market / 60-Min Target Edge", implied_prob, true_prob, value_gap, justification_text)
