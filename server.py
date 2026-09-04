@@ -74,10 +74,10 @@ def send_comprehensive_alert(match_title, ft_odds, h1_odds, o05_odds, imp, true_
     except Exception: pass
 
 def fetch_real_live_stats(home_name, away_name):
-    url = "https://api-sports.io"
+    target_api_path = "https://api-sports.io"
     headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
     try:
-        res = requests.get(url, headers=headers, params={"live": "all"}, timeout=8)
+        res = requests.get(target_api_path, headers=headers, params={"live": "all"}, timeout=8)
         if res.status_code == 200:
             for f in res.json().get("response", []):
                 h = f.get("teams", {}).get("home", {}).get("name", "").lower()
@@ -106,13 +106,11 @@ def monitor_live_pitches():
     for league in rotation[:3]:
         league_key = league["key"]
         
-        # --- FIXED HARDCODED URL ENDPOINT WITH BUILT-IN SLASHES ---
-        url = f"https://the-odds-api.com{league_key}/odds"
-        
+        # --- ENTIRELY REDESIGNED AND UNIFIED SYSTEM REQUESTS PATH ---
         params = {"apiKey": LIVE_DATA_API_KEY, "regions": "eu", "markets": "h2h,totals", "oddsFormat": "decimal"}
         try:
             time.sleep(2.0)
-            res = requests.get(url, params=params, timeout=12)
+            res = requests.get(f"https://the-odds-api.com{league_key}/odds", params=params, timeout=12)
             if res.status_code != 200: continue
             for fix in res.json():
                 home, away = fix.get("home_team"), fix.get("away_team")
