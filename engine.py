@@ -137,7 +137,7 @@ def monitor_live_pitches():
                                     else:
                                         implied_target = abs(h_num) / (abs(h_num) + 100)
                                 except: 
-                                    implied_target: = 0.50
+                                    implied_target = 0.50
                             if mkt.get("key") == "totals":
                                 for out in mkt.get("outcomes", []):
                                     if out.get("point") == 0.5 and out.get("name") == "Over":
