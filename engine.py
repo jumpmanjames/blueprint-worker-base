@@ -554,7 +554,13 @@ def execute_global_pitch_sweeps():
                         send_discord_payload(interval_alert)
     except Exception as api_sports_err:
         print(f"[-] Live sports collection engine execution fault: {api_sports_err}")
-        # 2. Pre-Match Backup Pipeline via The Odds API
+
+    # 2. Pre-Match Backup Pipeline via The Odds API
+    for sport_item in MASTER_BOOKIE_CATALOG:
+        league_key = sport_item["key"]
+        league_title = sport_item["title"]
+        league_api_id = sport_item["api_id"]
+        
         url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
         params = {
             "apiKey": LIVE_DATA_API_KEY, 
@@ -576,7 +582,6 @@ def execute_global_pitch_sweeps():
             
         if not match_data or not isinstance(match_data, list):
             continue
-            
         for fixture in match_data:
             commence_time_str = fixture.get("commence_time")
             if not commence_time_str:
@@ -658,6 +663,9 @@ def execute_global_pitch_sweeps():
     else:
         print("[-] Top 20 generation: No eligible favorites found in this expanded window.")
 
+# =====================================================================
+# PERSISTENT THREAD RUNTIME CONTROL
+# =====================================================================
 if __name__ == "__main__":
     last_ledger_dump_time = time.time()
     
@@ -701,8 +709,8 @@ if __name__ == "__main__":
             send_discord_payload(summary_banner)
             last_ledger_dump_time = current_loop_time
         
-        # Strategic power saving rest periods (11 PM Central to 3 AM Central)
+        # Strategic power-saving rest frames (11 PM Central to 3 AM Central)
         if central_hour >= 23 or central_hour < 3:
-            time.sleep(3600)  # Sleep for 1 hour during low-volume overnight slates
+            time.sleep(3600)  # Sleep for 1 hour during non-prime midnight windows
         else:
-            time.sleep(600)   # Active runtime sweep frequency configuration: 10 minutes (600 seconds)
+            time.sleep(600)   # Regular active sweep frequency: 10 minutes (600 seconds)
