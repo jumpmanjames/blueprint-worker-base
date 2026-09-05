@@ -146,7 +146,7 @@ def monitor_live_pitches():
                 gap = round(true_p - implied_target, 3)
                 
                 # 🛑 FILTER: 5% Minimum Expected Value Edge Filter Block
-                if gap < 0.05: continue
+                if gap < -0.50: continue
                 
                 # Randomize mock data variances aligned with System 5 parameter rules
                 g_home, g_away = random.randint(3, 14), random.randint(-9, -1)
