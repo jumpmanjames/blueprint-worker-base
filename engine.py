@@ -171,9 +171,9 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
             records = res.json().get("response", [])
             if records and isinstance(records, list):
                 if len(records) > 0:
-                    standings_lists = records[0].get("league", {}).get("standings", [])
+                    standings_lists = records.get("league", {}).get("standings", [])
                     if standings_lists and isinstance(standings_lists, list) and len(standings_lists) > 0:
-                        for team_entry in standings_lists[0]:
+                        for team_entry in standings_lists:
                             t_name = team_entry.get("team", {}).get("name", "").lower()
                             if home_team.lower()[:5] in t_name or t_name[:5] in home_team.lower():
                                 gd = team_entry.get("goalsDiff", 0)
@@ -185,9 +185,9 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
             records_a = res_away.json().get("response", [])
             if records_a and isinstance(records_a, list):
                 if len(records_a) > 0:
-                    standings_lists_a = records_a[0].get("league", {}).get("standings", [])
+                    standings_lists_a = records_a.get("league", {}).get("standings", [])
                     if standings_lists_a and isinstance(standings_lists_a, list) and len(standings_lists_a) > 0:
-                        for team_entry in standings_lists_a[0]:
+                        for team_entry in standings_lists_a:
                             t_name = team_entry.get("team", {}).get("name", "").lower()
                             if away_team.lower()[:5] in t_name or t_name[:5] in away_team.lower():
                                 gd = team_entry.get("goalsDiff", 0)
@@ -205,6 +205,18 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
         f"4. **Hierarchy Mismatch:** Sports Mole final score consensus matches historical caliber patterns.\n"
         f"   **STATUS: PASS** \U0001F7E2"
     )
+
+def is_eligible_favorite(odds_val):
+    """Helper method to filter favorites across American odds spanning from -100000 to +300."""
+    try:
+        val = int(odds_val)
+        if val <= -110 and val >= -100000:
+            return True
+        if 100 <= val <= 300:
+            return True
+        return False
+    except ValueError:
+        return False
 def execute_global_pitch_sweeps():
     print("[+] Ingestion engine active. Executing full global sweep...")
     current_time_utc = datetime.datetime.now(datetime.timezone.utc)
@@ -270,21 +282,18 @@ def execute_global_pitch_sweeps():
             away_odds_val = h2h_odds.get(away, 100)
             draw_odds_val = h2h_odds.get("Draw", 100)
             
-            try:
-                h_int = int(home_odds_val)
-                if h_int <= -110: all_discovered_favorites.append({"team": home, "odds": h_int, "match": f"{home} vs {away}", "league": league_title})
-            except ValueError: pass
-            try:
-                a_int = int(away_odds_val)
-                if a_int <= -110: all_discovered_favorites.append({"team": away, "odds": a_int, "match": f"{home} vs {away}", "league": league_title})
-            except ValueError: pass
+            if is_eligible_favorite(home_odds_val):
+                all_discovered_favorites.append({"team": home, "odds": int(home_odds_val), "match": f"{home} vs {away}", "league": league_title})
+            
+            if is_eligible_favorite(away_odds_val):
+                all_discovered_favorites.append({"team": away, "odds": int(away_odds_val), "match": f"{home} vs {away}", "league": league_title})
 
             implied_p = convert_american_to_implied(home_odds_val)
             is_live = commence_dt <= current_time_utc
             
             try:
                 h_odds_int = int(home_odds_val)
-                if -300 <= h_odds_int <= -175 and not is_live:
+                if -100000 <= h_odds_int <= -175 and not is_live:
                     juice_alert = (
                         f"\U0001F3CE **CORVETTE FUND BLUEPRINT \u2014 SYSTEM 2 JUICE OVERRIDE**\n\n"
                         f"**Match Context:** {home} vs {away} ({league_title})\n"
@@ -340,7 +349,7 @@ def execute_global_pitch_sweeps():
             board_msg += f"{index}. **{item['team']}** ({item['odds']}) — *{item['match']}* [{item['league']}]\n"
         send_discord_payload(board_msg)
     else:
-        print("[-] Top 20 generation: No eligible favorites under -110 found in this window.")
+        print("[-] Top 20 generation: No eligible favorites found in this expanded window.")
 
 if __name__ == "__main__":
     last_ledger_dump_time = time.time()
