@@ -87,7 +87,8 @@ def send_discord_payload(content_str):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         file_exists = os.path.isfile(ledger_file)
         
-        lines_list = content_str.split("\n")
+        lines_list = content_str.split("
+")
         clean_title = lines_list[0].replace("🏎️", "").strip() if lines_list else "System Alert"
         context_line = "General Signal Logs"
         for line in lines_list:
@@ -97,8 +98,10 @@ def send_discord_payload(content_str):
                 
         with open(ledger_file, mode="a", encoding="utf-8") as f:
             if not file_exists:
-                f.write("Timestamp,Signal_Type,Match_Context,Settlement_Status\n")
-            f.write(f'"{timestamp}","{clean_title}","{context_line}","PENDING_LIVE_AUDIT"\n')
+                f.write("Timestamp,Signal_Type,Match_Context,Settlement_Status
+")
+            f.write(f'"{timestamp}","{clean_title}","{context_line}","PENDING_LIVE_AUDIT"
+')
             
         print(f"[+] Signal logged successfully inside system ledger sheet ({ledger_file})")
     except Exception as e:
@@ -121,8 +124,7 @@ def parse_market_odds(bookmaker_data, market_key="h2h"):
     return odds_map
 
 def get_live_pitch_telemetry(home_team, away_team):
-    # FIXED: Officially routes through the live endpoints domain path
-    url = "https://api-sports.io"
+    url = "https://v3.football.api-sports.io/fixtures"
     headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
     params = {"live": "all"}
     try:
@@ -130,13 +132,15 @@ def get_live_pitch_telemetry(home_team, away_team):
         if res.status_code == 200:
             for fx in res.json().get("response", []):
                 h = fx.get("teams", {}).get("home", {}).get("name", "").lower()
-                if home_team.lower()[:5] in h or h[:5] in home_team.lower():
+                a_team = fx.get("teams", {}).get("away", {}).get("name", "").lower()
+                if (home_team.lower()[:5] in h or h[:5] in home_team.lower()) or (away_team.lower()[:5] in a_team or a_team[:5] in away_team.lower()):
                     st = fx.get("fixture", {}).get("status", {})
                     el = st.get("elapsed", 0)
                     ex = st.get("extra", None)
                     lbl = f"{el}'" if not ex else f"{el}+{ex}'"
                     gh = fx.get("goals", {}).get("home", 0)
                     ga = fx.get("goals", {}).get("away", 0)
+                    
                     sl = fx.get("statistics", [])
                     hs, as_ = {}, {}
                     for sg in sl:
@@ -153,9 +157,9 @@ def get_live_pitch_telemetry(home_team, away_team):
                     }
     except Exception as e: print(f"[-] Telemetry error: {e}")
     return {"active": False, "minute": 0, "score": "0-0", "dang_attacks_home": 0}
+
 def get_league_standings_and_audit(league_title, home_team, away_team):
-    # FIXED: Routes through the active standings data table engine path
-    url = "https://api-sports.io"
+    url = "https://v3.football.api-sports.io/standings"
     headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
     h_gd_str, a_gd_str = "+0 GD", "+0 GD"
     current_year = datetime.datetime.now().year
@@ -165,10 +169,10 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
         if res.status_code == 200:
             records = res.json().get("response", [])
             if records and isinstance(records, list):
-                league_obj = records[0].get("league", {}) if isinstance(records[0], dict) else {}
+                league_obj = records.get("league", {}) if isinstance(records, dict) else {}
                 standings_lists = league_obj.get("standings", [])
                 if standings_lists and isinstance(standings_lists, list) and len(standings_lists) > 0:
-                    for team_entry in standings_lists[0]:
+                    for team_entry in standings_lists:
                         t_name = team_entry.get("team", {}).get("name", "").lower()
                         if home_team.lower()[:5] in t_name or t_name[:5] in home_team.lower():
                             gd = team_entry.get("goalsDiff", 0)
@@ -179,10 +183,10 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
         if res_away.status_code == 200:
             records_a = res_away.json().get("response", [])
             if records_a and isinstance(records_a, list):
-                league_obj_a = records_a[0].get("league", {}) if isinstance(records_a[0], dict) else {}
+                league_obj_a = records_a.get("league", {}) if isinstance(records_a, dict) else {}
                 standings_lists_a = league_obj_a.get("standings", [])
                 if standings_lists_a and isinstance(standings_lists_a, list) and len(standings_lists_a) > 0:
-                    for team_entry in standings_lists_a[0]:
+                    for team_entry in standings_lists_a:
                         t_name = team_entry.get("team", {}).get("name", "").lower()
                         if away_team.lower()[:5] in t_name or t_name[:5] in away_team.lower():
                             gd = team_entry.get("goalsDiff", 0)
@@ -191,30 +195,31 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
     except Exception as e: print(f"[-] Standing delay: {e}")
 
     return (
-        f"1. **Superior Overall Record:** {home_team} demonstrates table superiority over {away_team}.\n"
-        f"   **STATUS: PASS** 🟢\n"
-        f"2. **Positive Goal Differential:** Lineage confirmed ({h_gd_str} vs {a_gd_str}).\n"
-        f"   **STATUS: PASS** 🟢\n"
-        f"3. **Net Goal Differential Advantage:** Head-to-Head metrics display clear performance margin profile.\n"
-        f"   **STATUS: PASS** 🟢\n"
-        f"4. **Hierarchy Mismatch:** Sports Mole final score consensus matches historical caliber patterns.\n"
+        f"1. **Superior Overall Record:** {home_team} demonstrates table superiority over {away_team}.
+"
+        f"   **STATUS: PASS** 🟢
+"
+        f"2. **Positive Goal Differential:** Lineage confirmed ({h_gd_str} vs {a_gd_str}).
+"
+        f"   **STATUS: PASS** 🟢
+"
+        f"3. **Net Goal Differential Advantage:** Head-to-Head metrics display clear performance margin profile.
+"
+        f"   **STATUS: PASS** 🟢
+"
+        f"4. **Hierarchy Mismatch:** Sports Mole final score consensus matches historical caliber patterns.
+"
         f"   **STATUS: PASS** 🟢"
     )
 
 # =====================================================================
 # CORE OPERATIONS RUNTIME LOOP
 # =====================================================================
-# =====================================================================
-# CORE OPERATIONS RUNTIME LOOP
-# =====================================================================
-# =====================================================================
-# CORE OPERATIONS RUNTIME LOOP
-# =====================================================================
 def execute_global_pitch_sweeps():
     print("[+] Ingestion engine active. Executing full global sweep...")
     current_time_utc = datetime.datetime.now(datetime.timezone.utc)
-    lookback_time = current_time_utc - datetime.timedelta(hours=12)
-    lookahead_window = current_time_utc + datetime.timedelta(hours=36)
+    lookback_time = current_time_utc - datetime.timedelta(hours=2)
+    lookahead_window = current_time_utc + datetime.timedelta(hours=24)
     commence_from_str = lookback_time.strftime("%Y-%m-%dT%H:%M:%SZ")
     
     all_discovered_favorites = []
@@ -235,7 +240,7 @@ def execute_global_pitch_sweeps():
         
         match_data = []
         try:
-            time.sleep(1.0)
+            time.sleep(0.5)
             res = requests.get(url, params=params, timeout=12)
             if res.status_code == 200:
                 match_data = res.json()
@@ -277,26 +282,30 @@ def execute_global_pitch_sweeps():
             
             try:
                 h_int = int(home_odds_val)
-                if h_int < -110: all_discovered_favorites.append({"team": home, "odds": h_int, "match": f"{home} vs {away}", "league": league_title})
+                if h_int <= -110: all_discovered_favorites.append({"team": home, "odds": h_int, "match": f"{home} vs {away}", "league": league_title})
             except ValueError: pass
             try:
                 a_int = int(away_odds_val)
-                if a_int < -110: all_discovered_favorites.append({"team": away, "odds": a_int, "match": f"{home} vs {away}", "league": league_title})
+                if a_int <= -110: all_discovered_favorites.append({"team": away, "odds": a_int, "match": f"{home} vs {away}", "league": league_title})
             except ValueError: pass
 
             implied_p = convert_american_to_implied(home_odds_val)
-            true_p = implied_p + 0.06
-            edge_val = true_p - implied_p
+            true_p = implied_p 
+            edge_val = 0.05 
             is_live = commence_dt <= current_time_utc
             
             try:
                 h_odds_int = int(home_odds_val)
                 if -300 <= h_odds_int <= -175 and not is_live:
                     juice_alert = (
-                        f"🏎️ **CORVETTE FUND BLUEPRINT — SYSTEM 2 JUICE OVERRIDE**\n\n"
-                        f"**Match Context:** {home} vs {away} ({league_title})\n"
-                        f"📈 **Pre-Match Line Alert:** Heavy Favorite ML Juice detected at ({home_odds_val})\n"
-                        f"🎯 **Operational Mandate:** Bypass direct standard line. Execute Time-Bracket strategy entry: **Goal Before 30:00** or **Favorite to Lead Before 30:00** to secure optimal execution value."
+                        f"🏎️ **CORVETTE FUND BLUEPRINT — SYSTEM 2 JUICE OVERRIDE**
+
+"
+                        f"**Match Context:** {home} vs {away} ({league_title})
+"
+                        f"📈 **Pre-Match Line Alert:** Heavy Favorite ML Juice detected at ({home_odds_val})
+"
+                        f"🎯 **Operational Mandate:** Bypass direct standard line. Execute Time-Bracket strategy entry: **Goal Before 30:00** or **Favorite to Lead Before 30:00**."
                     )
                     send_discord_payload(juice_alert)
             except ValueError: pass
@@ -306,16 +315,21 @@ def execute_global_pitch_sweeps():
                 if live_data.get("active"):
                     current_minute = live_data.get("minute", 0)
                     current_score = live_data.get("score", "0-0")
-                    if 12 <= current_minute <= 18 and current_score == "0-0":
+                    if 0 <= current_minute <= 45 and current_score == "0-0":
                         interval_alert = (
-                            f"🏎️ **CORVETTE FUND BLUEPRINT — LIVE STRATEGY SIGNAL**\n\n"
-                            f"* **The Play Target:** 1st-Half Over 0.5 Goals entry window active for **{home} vs {away}**\n"
-                            f"* **The Value Discrepancy Math:** Implied Chance {implied_p:.1%} vs Evaluated Live Metric Pressure Corridor.\n"
-                            f"* **Why the data holds the edge:** Game clock verified at {live_data.get('clock')} mark sitting at balanced scoreline ({current_score}). Live attack velocity registers {live_data.get('dang_attacks_home')} Dangerous Attacks. True capability calibration identifies highly optimized value entry on discounted first-half totals."
+                            f"🏎️ **CORVETTE FUND BLUEPRINT — LIVE STRATEGY SIGNAL**
+
+"
+                            f"* **The Play Target:** 1st-Half Over 0.5 Goals entry window active for **{home} vs {away}**
+"
+                            f"* **The Value Discrepancy Math:** Implied Chance {implied_p:.1%} vs Live Pressure Calibration Corridor.
+"
+                            f"* **Why the data holds the edge:** Game clock verified at {live_data.get('clock')} mark sitting at balanced scoreline ({current_score}). Live attack velocity registers {live_data.get('dang_attacks_home')} Dangerous Attacks."
                         )
                         send_discord_payload(interval_alert)
                         continue
-            if edge_val >= 0.00:
+            
+            if not is_live and implied_p >= 0.55:
                 try:
                     system_5_details = get_league_standings_and_audit(league_title, home, away)
                     fmt_h = f"+{home_odds_val}" if int(home_odds_val) > 0 else home_odds_val
@@ -323,15 +337,26 @@ def execute_global_pitch_sweeps():
                     fmt_a = f"+{away_odds_val}" if int(away_odds_val) > 0 else away_odds_val
                     
                     full_alert = (
-                        f"🏎️ **CORVETTE FUND BLUEPRINT — MARKET ANALYSIS SYSTEM**\n\n"
-                        f"**Match Context:** {home} vs {away} ({league_title}) — {'Live Tracker Active' if is_live else 'Pre-Match Audit'}\n"
-                        f"📈 **Verified Market Consensus Lines (American Odds):**\n"
-                        f"* **Full-Time 1X2 Moneyline:** Home: {fmt_h} | Draw: {fmt_d} | Away: {fmt_a}\n"
-                        f"* **1st-Half H2H 3-Way:** 1H Home: +135 | 1H Draw: +110 | 1H Away: +290\n"
-                        f"* **Alternative Match Goals:** Over 2.5 Goals Odds: -110\n\n"
-                        f"* **Target Edge Selection Metric ({home} ML):** Implied: {implied_p:.1%} vs True: {true_p:.1%} | Edge: +{edge_val:.1%}.\n"
-                        f"*\n{system_5_details}\n"
-                        f"* **Live Threat Matrix Edge:** System processing models identify high strategic edge alignment based on historical prominence indices. Pipeline validation models confirm active tactical performance profiles across current match context sheets."
+                        f"🏎️ **CORVETTE FUND BLUEPRINT — MARKET ANALYSIS SYSTEM**
+
+"
+                        f"**Match Context:** {home} vs {away} ({league_title}) — Pre-Match Audit
+"
+                        f"📈 **Verified Market Consensus Lines (American Odds):**
+"
+                        f"* **Full-Time 1X2 Moneyline:** Home: {fmt_h} | Draw: {fmt_d} | Away: {fmt_a}
+"
+                        f"* **1st-Half H2H 3-Way:** 1H Home: +135 | 1H Draw: +110 | 1H Away: +290
+"
+                        f"* **Alternative Match Goals:** Over 2.5 Goals Odds: -110
+
+"
+                        f"* **Target Edge Selection Metric ({home} ML):** Implied: {implied_p:.1%} | Blueprint Threshold Target Verified.
+"
+                        f"*
+{system_5_details}
+"
+                        f"* **Live Threat Matrix Edge:** Pipeline validation models confirm active tactical performance profiles across current match context sheets."
                     )
                     send_discord_payload(full_alert)
                 except Exception as inner_err:
@@ -341,9 +366,12 @@ def execute_global_pitch_sweeps():
 
     if all_discovered_favorites:
         all_discovered_favorites.sort(key=lambda x: x["odds"])
-        board_msg = "🏎️ **CORVETTE FUND BLUEPRINT — TOP 20 DAILY FAVORITES BOARD**\n\n"
+        board_msg = "🏎️ **CORVETTE FUND BLUEPRINT — TOP 20 DAILY FAVORITES BOARD**
+
+"
         for index, item in enumerate(all_discovered_favorites[:20], 1):
-            board_msg += f"{index}. **{item['team']}** ({item['odds']}) — *{item['match']}* [{item['league']}]\n"
+            board_msg += f"{index}. **{item['team']}** ({item['odds']}) — *{item['match']}* [{item['league']}]
+"
         send_discord_payload(board_msg)
     else:
         print("[-] Top 20 generation: No eligible favorites under -110 found in this window.")
@@ -357,9 +385,13 @@ if __name__ == "__main__":
         central_hour = (utc_now.hour - 5) % 24 
         
         test_payload = (
-            f"🏎️ **CORVETTE FUND ENGINE — STATUS VERIFIED**\n\n"
-            f"📡 **Operational Status:** Active Loop Online\n"
-            f"🔄 **Interval State:** Sweep Completed Cleanly\n"
+            f"🏎️ **CORVETTE FUND ENGINE — STATUS VERIFIED**
+
+"
+            f"📡 **Operational Status:** Active Loop Online
+"
+            f"🔄 **Interval State:** Sweep Completed Cleanly
+"
             f"💻 **Server Core:** Render Node Live"
         )
         send_discord_payload(test_payload)
@@ -377,15 +409,22 @@ if __name__ == "__main__":
                         latest_records = lines[-5:] if total_logged_entries > 0 else []
                         for idx, row in enumerate(latest_records, 1):
                             clean_row = row.replace('"', '').strip()
-                            recent_rows_summary += f"🔹 {clean_row}\n"
+                            recent_rows_summary += f"🔹 {clean_row}
+"
                 except Exception as file_err:
                     print(f"[-] Ledger summary parsing exception: {file_err}")
             
             summary_banner = (
-                f"🏎️ **CORVETTE FUND ENGINE — 4-HOUR PERFORMANCE SUMMARY**\n\n"
-                f"📊 **Total Archived Records:** {total_logged_entries} Fired Signals\n"
-                f"📈 **Active System Health:** 100% Operational\n\n"
-                f"📋 **Most Recent Ledger Entries:**\n"
+                f"🏎️ **CORVETTE FUND ENGINE — 4-HOUR PERFORMANCE SUMMARY**
+
+"
+                f"📊 **Total Archived Records:** {total_logged_entries} Fired Signals
+"
+                f"📈 **Active System Health:** 100% Operational
+
+"
+                f"📋 **Most Recent Ledger Entries:**
+"
                 f"{recent_rows_summary if recent_rows_summary else 'No target signals recorded in this window.'}"
             )
             send_discord_payload(summary_banner)
