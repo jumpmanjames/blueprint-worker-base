@@ -182,14 +182,19 @@ def monitor_live_pitches():
                 sys5_just = (
                     f"* **Corridor Validation:**\n"
                     f" 1. **Superior Overall Record:** {home} holds superior standing, "
-                    f"outperforming the opponent across the current competitive group tier matrix stage. **STATUS: PASS** 🟢\n"
+                    f"outperforming the opponent across the current competitive group tier matrix stage.\n"
+                    f"    **STATUS: PASS** 🟢\n"
                     f" 2. **Positive Goal Differential:** {home} maintains tactical dominance with season performance "
-                    f"wrapped inside parentheses (`+{g_home} GD` vs `{g_away} GD`). **STATUS: PASS** 🟢\n"
+                    f"wrapped inside parentheses (`+{g_home} GD` vs `{g_away} GD`).\n"
+                    f"    **STATUS: PASS** 🟢\n"
                     f" 3. **Net Goal Differential Advantage:** Direct H2H advantage verified via previous years' statistics "
-                    f"and Sofascore historical archives showing a +{h2h_wins} net head-to-head performance margin. **STATUS: PASS** 🟢\n"
+                    f"and Sofascore historical archives showing a +{h2h_wins} net head-to-head performance margin.\n"
+                    f"    **STATUS: PASS** 🟢\n"
                     f" 4. **Hierarchy Mismatch:** Verified stature dominance, technical lineage tracking, and final scoreline "
-                    f"consensus checks on Sports Mole confirm an active tactical validation profile. **STATUS: PASS** 🟢\n"
+                    f"consensus checks on Sports Mole confirm an active tactical validation profile.\n"
+                    f"    **STATUS: PASS** 🟢\n"
                 )
+
                 
                 if is_running_live:
                     live_data = fetch_real_live_stats(home, away)
