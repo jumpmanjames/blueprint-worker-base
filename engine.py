@@ -132,8 +132,10 @@ def monitor_live_pitches():
                                 ft_line = f"Home: {fmt_am(outs.get(home, '+100'))} | Draw: {fmt_am(outs.get('Draw', '+240'))} | Away: {fmt_am(outs.get(away, '+300'))}"
                                 try:
                                     h_num = int(outs.get(home, 100))
-                                    implied_target = 100 / (h_num + 100) if h_num > 0 else abs(h_num) if (abs(h_num) + 100) else 0.50
-                                except: implied_target = 0.50
+                                    if h_num > 0:
+                                        implied_target = 100 / (h_num + 100)
+                                    else:
+                                        implied_target = 0.50
                             if mkt.get("key") == "totals":
                                 for out in mkt.get("outcomes", []):
                                     if out.get("point") == 0.5 and out.get("name") == "Over":
