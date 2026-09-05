@@ -179,7 +179,7 @@ def monitor_live_pitches():
                 g_home, g_away = random.randint(3, 14), random.randint(-9, -1)
                 h2h_wins = random.randint(4, 7)
                 
-    # Verification System Alert Pipeline Check
+    
     send_comprehensive_alert(
         "Almería vs. Cádiz CF (Spain Segunda) — Live 18th Min on 1xBet",
         "Almería",
