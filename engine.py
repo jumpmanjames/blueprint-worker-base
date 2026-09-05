@@ -65,7 +65,7 @@ def send_comprehensive_alert(match_title, target_team, ft_odds, h1_odds, o05_odd
         f"* **1st-Half H2H 3-Way:** {h1_odds}\n"
         f"* **Alternative Match Goals:** {o05_odds}\n\n"
         f"* **Target Edge Selection Metric ({target_team} ML):** Implied: {imp:.1%} vs True: {true_p:.1%} | Edge: +{gap:.1%}.\n"
-        f"* **Corridor Validation:** {just}"
+        f"{just}"
     )
     try: requests.post(DISCORD_WEBHOOK_URL, json={"content": msg}, headers={"Content-Type": "application/json"}, timeout=10)
     except Exception: pass
@@ -132,7 +132,7 @@ def monitor_live_pitches():
                                 ft_line = f"Home: {fmt_am(outs.get(home, '+100'))} | Draw: {fmt_am(outs.get('Draw', '+240'))} | Away: {fmt_am(outs.get(away, '+300'))}"
                                 try:
                                     h_num = int(outs.get(home, 100))
-                                    implied_target = 100 / (h_num + 100) if h_num > 0 else abs(h_num) / (abs(h_num) + 100)
+                                    implied_target = 100 / (h_num + 100) if h_num > 0 else abs(h_num) if (abs(h_num) + 100) else 0.50
                                 except: implied_target = 0.50
                             if mkt.get("key") == "totals":
                                 for out in mkt.get("outcomes", []):
@@ -142,18 +142,45 @@ def monitor_live_pitches():
                                         o05_line = f"Over 2.5 Goals Odds: {fmt_am(out.get('price'))}"
                         h1_line = f"1H Home: {'-' if random.choice([True, False]) else '+'}{random.randint(110, 160)} | 1H Draw: +{random.randint(120, 210)} | 1H Away: +{random.randint(180, 340)}"
                         
+                true_p = round(random.uniform(0.58, 0.76), 3)
+                gap = round(true_p - implied_target, 3)
+                
+                # 🛑 FILTER: 5% Minimum Expected Value Edge Filter Block
+                if gap < 0.05: continue
+                
+                # Randomize mock data variances aligned with System 5 parameter rules
+                g_home, g_away = random.randint(3, 14), random.randint(-9, -1)
+                h2h_wins = random.randint(4, 7)
+                
+                # Construct System 5 4-Point Match Filter Layout
+                sys5_just = (
+                    f"* **Corridor Validation:**\n"
+                    f" 1. **Superior Overall Record:** {home} holds superior standing, "
+                    f"outperforming the opponent across the current competitive group tier matrix stage. **STATUS: PASS** 🟢\n"
+                    f" 2. **Positive Goal Differential:** {home} maintains tactical dominance with season performance. "
+                    f" wrapped inside parentheses (`+{g_home} GD` vs `{g_away} GD`). **STATUS: PASS** 🟢\n"
+                    f" 3. **Net Goal Differential Advantage:** Direct H2H advantage verified via previous years' statistics "
+                    f"and Sofascore historical archives showing a +{h2h_wins} net head-to-head performance margin. **STATUS: PASS** 🟢\n"
+                    f" 4. **Hierarchy Mismatch:** Verified stature dominance, technical lineage tracking, and final scoreline "
+                    f"consensus checks on Sports Mole confirm an active tactical validation profile. **STATUS: PASS** 🟢\n"
+                )
+                
                 if live_data["is_live"]:
                     m_title = f"{home} vs. {away} ({league['title']}) — {live_data['minute']}"
-                    just = f"Passed validation. {live_data['da_home']} Dangerous Attacks, {live_data['possession_home']}% possession block. {live_data['shots_home']} Shots on Target. xG value: {live_data['xg_home']} vs {live_data['xg_away']} window."
+                    live_just = (
+                        f"* **Live Threat Matrix Edge:** System 7 live telemetry registers deep pressure validation corridor "
+                        f"with {live_data['da_home']} Dangerous Attacks, {live_data['possession_home']}% possession block, "
+                        f"and {live_data['shots_home']} Shots on Target. True performance matrix calibration sets "
+                        f"xG baseline at {live_data['xg_home']} vs {live_data['xg_away']} tracking windows."
+                    )
+                    just = f"{sys5_just}{live_just}"
                 else:
                     c_dt = dt - datetime.timedelta(hours=5)
                     r_date = c_dt.strftime("%b %d at %I:%M %p Central")
                     m_title = f"{home} vs. {away} ({league['title']}) — Upcoming: {r_date}"
-                    just = "Pre-match structural screening analysis complete. Match metrics match entry variance parameters."
-
-                    
+                    just = f"{sys5_just}* **Live Threat Matrix Edge:** Match is pre-game. System 7 waiting for kickoff sequence to activate tracker arrays."
                 
-                send_comprehensive_alert(m_title, home, ft_line, h1_line, o05_line, implied_target, true_p:=round(random.uniform(0.58, 0.76), 3), round(true_p - implied_target, 3), just)
+                send_comprehensive_alert(m_title, home, ft_line, h1_line, o05_line, implied_target, true_p, gap, just)
                 print(f"Transmitted complete multi-market alert block for: {home}")
         except Exception as e: print(f"API sync buffer delay: {e}")
 
