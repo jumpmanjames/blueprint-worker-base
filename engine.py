@@ -174,7 +174,7 @@ def execute_global_pitch_sweeps():
     for sport_item in MASTER_BOOKIE_CATALOG:
         league_key = sport_item["key"]
         league_title = sport_item["title"]
-        url = f"https://the-odds-api.com{league_key}/odds"
+        url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
         params = {"apiKey": LIVE_DATA_API_KEY, "regions": "us,eu", "markets": "h2h,totals", "oddsFormat": "american"}
         
         try:
