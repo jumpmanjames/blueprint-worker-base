@@ -122,7 +122,7 @@ def monitor_live_pitches():
                 
                 home, away = fix.get("home_team"), fix.get("away_team")
                 live_data = fetch_real_live_stats(home, away)
-                ft_line, h1_line, o05_line = "N/A", "N/A", "N/A"
+                ft_line, h1_line, o05_line = "N/A", "N/A", "Live Over/Under Lines Locked"
                 implied_target = 0.50
                 
                 for bm in fix.get("bookmakers", []):
