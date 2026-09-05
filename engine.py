@@ -368,15 +368,15 @@ def execute_global_pitch_sweeps():
     else:
         print("[-] Top 20 generation: No eligible favorites under -110 found in this window.")
 if __name__ == "__main__":
+    # Keeps track of when the last 4-hour ledger summary was dispatched
+    last_ledger_dump_time = time.time()
+    
     while True:
         execute_global_pitch_sweeps()
         
-        # Calculate current Central Time (CT) to drive the dynamic sleep valve
         utc_now = datetime.datetime.now(datetime.timezone.utc)
-        # Central Time is UTC-6 (or UTC-5 during Daylight Saving Time)
         central_hour = (utc_now.hour - 5) % 24 
         
-        # Immediate active pipeline diagnostic validation banner
         test_payload = (
             f"🏎️ **CORVETTE FUND ENGINE — STATUS VERIFIED**\n\n"
             f"📡 **Operational Status:** Active Loop Online\n"
@@ -385,6 +385,45 @@ if __name__ == "__main__":
         )
         send_discord_payload(test_payload)
         
+        # =====================================================================
+        # AUTOMATED 4-HOUR LEDGER MONITOR SUMMARY DISPATCH
+        # =====================================================================
+        current_loop_time = time.time()
+        # 14400 seconds equals exactly 4 full hours
+        if current_loop_time - last_ledger_dump_time >= 14400:
+            ledger_file = "bet_ledger.csv"
+            total_logged_entries = 0
+            recent_rows_summary = ""
+            
+            if os.path.isfile(ledger_file):
+                try:
+                    with open(ledger_file, mode="r", encoding="utf-8") as f:
+                        lines = f.readlines()
+                        # Deduct 1 to account for the header row block
+                        total_logged_entries = max(0, len(lines) - 1)
+                        
+                        # Grab up to the last 5 active records to display clean scannability
+                        latest_records = lines[-5:] if total_logged_entries > 0 else []
+                        for idx, row in enumerate(latest_records, 1):
+                            # Basic formatting layout to display items cleanly on mobile screens
+                            clean_row = row.replace('"', '').strip()
+                            recent_rows_summary += f"🔹 {clean_row}\n"
+                except Exception as file_err:
+                    print(f"[-] Ledger summary parsing exception: {file_err}")
+            
+            summary_banner = (
+                f"🏎️ **CORVETTE FUND ENGINE — 4-HOUR PERFORMANCE SUMMARY**\n\n"
+                f"📊 **Total Archived Records:** {total_logged_entries} Fired Signals\n"
+                f"📈 **Active System Health:** 100% Operational\n\n"
+                f"📋 **Most Recent Ledger Entries:**\n"
+                f"{recent_rows_summary if recent_rows_summary else 'No target signals recorded in this window.'}"
+            )
+            send_discord_payload(summary_banner)
+            
+            # Reset the timer checkpoint array loop
+            last_ledger_dump_time = current_loop_time
+            print("[+] 4-Hour ledger summary successfully compiled and sent to Discord.")
+        
         # SYSTEM HYBRID OVERRIDE DEAD-ZONE THROTTLE [11 PM to 3 AM Central]
         if central_hour >= 23 or central_hour < 3:
             print(f"[!] System entering late-night dead zone ({central_hour}:00 CT). Sleeping for 1 hour to conserve API tokens...")
@@ -392,6 +431,7 @@ if __name__ == "__main__":
         else:
             print(f"[+] System active in prime operational window ({central_hour}:00 CT). Entering standard 10-minute rest buffer...")
             time.sleep(600)
+
 
 
 
