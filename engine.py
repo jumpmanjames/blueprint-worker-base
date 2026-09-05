@@ -160,16 +160,21 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
 # =====================================================================
 # CORE OPERATIONS RUNTIME LOOP
 # =====================================================================
+# =====================================================================
+# CORE OPERATIONS RUNTIME LOOP
+# =====================================================================
 def execute_global_pitch_sweeps():
     print("[+] Ingestion engine active. Executing full global sweep...")
     current_time_utc = datetime.datetime.now(datetime.timezone.utc)
     lookahead_window = current_time_utc + datetime.timedelta(days=1)
     all_discovered_favorites = []
+    leagues_with_data = 0
+    total_matches_found = 0
     
     for sport_item in MASTER_BOOKIE_CATALOG:
         league_key = sport_item["key"]
         league_title = sport_item["title"]
-        url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
+        url = f"https://the-odds-api.com{league_key}/odds"
         params = {"apiKey": LIVE_DATA_API_KEY, "regions": "us,eu", "markets": "h2h,totals", "oddsFormat": "american"}
         
         try:
@@ -178,19 +183,27 @@ def execute_global_pitch_sweeps():
             if res.status_code != 200:
                 continue
             match_data = res.json()
+            if match_data:
+                leagues_with_data += 1
+                
             for fixture in match_data:
+                total_matches_found += 1
                 commence_time_str = fixture.get("commence_time")
                 commence_dt = datetime.datetime.strptime(commence_time_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
                 if commence_dt > lookahead_window:
                     continue
                 home, away = fixture.get("home_team"), fixture.get("away_team")
+                
                 target_bookmaker = None
-                for bm in fixture.get("bookmakers", []):
-                    if bm.get("title") in ["Bet365", "DraftKings", "FanDuel", "Bovada"]:
-                        target_bookmaker = bm
-                        break
-                if not target_bookmaker and fixture.get("bookmakers"):
-                    target_bookmaker = fixture.get("bookmakers")[0]
+                bookmakers_list = fixture.get("bookmakers", [])
+                if bookmakers_list:
+                    for bm in bookmakers_list:
+                        if bm.get("title") in ["Bet365", "DraftKings", "FanDuel", "Bovada"]:
+                            target_bookmaker = bm
+                            break
+                    if not target_bookmaker:
+                        target_bookmaker = bookmakers_list[0]
+                        
                 if not target_bookmaker:
                     continue
                 
@@ -213,7 +226,7 @@ def execute_global_pitch_sweeps():
                     pass
 
                 implied_p = convert_american_to_implied(home_odds_val)
-                true_p = implied_p * 1.06 
+                true_p = implied_p + 0.06
                 edge_val = true_p - implied_p
                 is_live = commence_dt <= current_time_utc
                 
@@ -266,12 +279,16 @@ def execute_global_pitch_sweeps():
         except Exception as api_err:
             print(f"[-] Buffer delay parsing league data stream: {api_err}")
 
+    print(f"[+] Sweep Status: Checked 48 leagues. Found {leagues_with_data} leagues with active boards. Total matches evaluated: {total_matches_found}")
+
     if all_discovered_favorites:
         all_discovered_favorites.sort(key=lambda x: x["odds"])
         board_msg = "🏎️ **CORVETTE FUND BLUEPRINT — TOP 20 DAILY FAVORITES BOARD**\n\n"
         for index, item in enumerate(all_discovered_favorites[:20], 1):
             board_msg += f"{index}. **{item['team']}** ({item['odds']}) — *{item['match']}* [{item['league']}]\n"
         send_discord_payload(board_msg)
+    else:
+        print("[-] Top 20 generation: No eligible favorites under -110 found in this window.")
 
 if __name__ == "__main__":
     while True:
