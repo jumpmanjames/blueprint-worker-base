@@ -14,9 +14,8 @@ API_FOOTBALL_KEY = os.environ.get("API_FOOTBALL_KEY")
 if not DISCORD_WEBHOOK_URL or not LIVE_DATA_API_KEY or not API_FOOTBALL_KEY:
     print("[-] Critical secure tokens missing from Environment Variables.")
     sys.exit(1)
-
 # =====================================================================
-# MASTER BOOKIE CATALOG: 48 LEAGUES STRUCTURAL VARIANCE SCOPE (PART 1)
+# MASTER BOOKIE CATALOG: MAPPED LEAGUE CODES (PART 1)
 # =====================================================================
 MASTER_BOOKIE_CATALOG = [
     {"key": "soccer_uefa_nations_league", "title": "UEFA Nations League", "api_id": 4},
@@ -45,7 +44,7 @@ MASTER_BOOKIE_CATALOG = [
     {"key": "soccer_netherlands_eredivisie", "title": "Netherlands Eredivisie", "api_id": 88}
 ]
 # =====================================================================
-# MASTER BOOKIE CATALOG: 48 LEAGUES STRUCTURAL VARIANCE SCOPE (PART 2)
+# MASTER BOOKIE CATALOG: MAPPED LEAGUE CODES (PART 2)
 # =====================================================================
 MASTER_BOOKIE_CATALOG.extend([
     {"key": "soccer_portugal_primeira_liga", "title": "Portugal Primeira Liga", "api_id": 94},
@@ -124,96 +123,82 @@ def parse_market_odds(bookmaker_data, market_key="h2h"):
                 for outcome in market.get("outcomes", []):
                     odds_map[outcome.get("name")] = outcome.get("price")
     return odds_map
-def get_live_pitch_telemetry(home_team, away_team, league_id=None):
+def get_live_pitch_telemetry(fixture_id):
     url = "https://api-sports.io"
     headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
-    params = {"live": "all"}
-    if league_id:
-        params["league"] = league_id
+    params = {"id": fixture_id}
         
     try:
         res = requests.get(url, headers=headers, params=params, timeout=10)
         if res.status_code == 200:
-            for fx in res.json().get("response", []):
-                h = fx.get("teams", {}).get("home", {}).get("name", "").lower()
-                a_team = fx.get("teams", {}).get("away", {}).get("name", "").lower()
+            data = res.json().get("response", [])
+            if data and len(data) > 0:
+                fx = data[0]
+                st = fx.get("fixture", {}).get("status", {})
+                el = st.get("elapsed", 0)
+                ex = st.get("extra", None)
+                lbl = f"{el}'" if not ex else f"{el}+{ex}'"
+                gh = fx.get("goals", {}).get("home", 0)
+                ga = fx.get("goals", {}).get("away", 0)
                 
-                if (home_team.lower()[:5] in h or h[:5] in home_team.lower()) or (away_team.lower()[:5] in a_team or a_team[:5] in away_team.lower()):
-                    st = fx.get("fixture", {}).get("status", {})
-                    el = st.get("elapsed", 0)
-                    ex = st.get("extra", None)
-                    lbl = f"{el}'" if not ex else f"{el}+{ex}'"
-                    gh = fx.get("goals", {}).get("home", 0)
-                    ga = fx.get("goals", {}).get("away", 0)
-                    fx_id = fx.get("fixture", {}).get("id")
-                    
-                    sl = fx.get("statistics", [])
-                    hs, as_ = {}, {}
-                    for sg in sl:
-                        ts = "home" if sg.get("team", {}).get("name", "").lower() == h else "away"
-                        for si in sg.get("statistics", []):
-                            mt = si.get("type")
-                            mv = si.get("value") or 0
-                            if isinstance(mv, str) and "%" in mv: mv = int(mv.replace("%", ""))
-                            if ts == "home": hs[mt] = mv
-                            else: as_[mt] = mv
-                            
-                    live_home_odds, live_away_odds, live_draw_odds = "+100", "+100", "+100"
-                    try:
-                        odds_url = "https://api-sports.io"
-                        odds_res = requests.get(odds_url, headers=headers, params={"fixture": fx_id}, timeout=5)
-                        if odds_res.status_code == 200:
-                            odds_data = odds_res.json().get("response", [])
-                            for entry in odds_data:
-                                for mkt in entry.get("odds", []):
-                                    if mkt.get("name") == "Match Winner":
-                                        for values in mkt.get("values", []):
-                                            if values.get("value") == "Home": live_home_odds = values.get("odd")
-                                            elif values.get("value") == "Away": live_away_odds = values.get("odd")
-                                            elif values.get("value") == "Draw": live_draw_odds = values.get("odd")
-                    except Exception as odds_err:
-                        print(f"[-] Live odds check bypassed: {odds_err}")
-                    
-                    return {
-                        "active": True, "clock": lbl, "minute": el, "score": f"{gh}-{ga}",
-                        "dang_attacks_home": hs.get("Dangerous Attacks", 0),
-                        "live_home_odds": live_home_odds, "live_away_odds": live_away_odds, "live_draw_odds": live_draw_odds
-                    }
+                sl = fx.get("statistics", [])
+                hs, as_ = {}, {}
+                for sg in sl:
+                    team_side = sg.get("team", {}).get("id")
+                    fx_home_id = fx.get("teams", {}).get("home", {}).get("id")
+                    ts = "home" if team_side == fx_home_id else "away"
+                    for si in sg.get("statistics", []):
+                        mt = si.get("type")
+                        mv = si.get("value") or 0
+                        if isinstance(mv, str) and "%" in mv: mv = int(mv.replace("%", ""))
+                        if ts == "home": hs[mt] = mv
+                        else: as_[mt] = mv
+                        
+                live_home_odds, live_away_odds, live_draw_odds = "+100", "+100", "+100"
+                try:
+                    odds_url = "https://api-sports.io"
+                    odds_res = requests.get(odds_url, headers=headers, params={"fixture": fixture_id}, timeout=5)
+                    if odds_res.status_code == 200:
+                        odds_data = odds_res.json().get("response", [])
+                        for entry in odds_data:
+                            for mkt in entry.get("odds", []):
+                                if mkt.get("name") == "Match Winner":
+                                    for values in mkt.get("values", []):
+                                        if values.get("value") == "Home": live_home_odds = values.get("odd")
+                                        elif values.get("value") == "Away": live_away_odds = values.get("odd")
+                                        elif values.get("value") == "Draw": live_draw_odds = values.get("odd")
+                except Exception as odds_err:
+                    print(f"[-] Live odds check bypassed: {odds_err}")
+                
+                return {
+                    "active": True, "clock": lbl, "minute": el, "score": f"{gh}-{ga}",
+                    "dang_attacks_home": hs.get("Dangerous Attacks", 0),
+                    "live_home_odds": live_home_odds, "live_away_odds": live_away_odds, "live_draw_odds": live_draw_odds
+                }
     except Exception as e: print(f"[-] Telemetry error: {e}")
     return {"active": False, "minute": 0, "score": "0-0", "dang_attacks_home": 0, "live_home_odds": "+100", "live_away_odds": "+100", "live_draw_odds": "+100"}
 
-def get_league_standings_and_audit(league_title, home_team, away_team):
+def get_league_standings_and_audit(league_id, home_team, away_team):
     url = "https://api-sports.io"
     headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
     h_gd_str, a_gd_str = "+0 GD", "+0 GD"
     current_year = datetime.datetime.now().year
     
     try:
-        res = requests.get(url, headers=headers, params={"search": home_team, "season": current_year}, timeout=8)
+        res = requests.get(url, headers=headers, params={"league": league_id, "season": current_year}, timeout=8)
         if res.status_code == 200:
             records = res.json().get("response", [])
-            if records and isinstance(records, list) and len(records) > 0:
+            if records and len(records) > 0:
                 standings_lists = records[0].get("league", {}).get("standings", [])
                 if standings_lists and isinstance(standings_lists, list) and len(standings_lists) > 0:
                     for team_entry in standings_lists[0]:
                         t_name = team_entry.get("team", {}).get("name", "").lower()
-                        if home_team.lower()[:5] in t_name or t_name[:5] in home_team.lower():
+                        if home_team.lower() in t_name or t_name in home_team.lower():
                             gd = team_entry.get("goalsDiff", 0)
                             h_gd_str = f"+{gd} GD" if gd > 0 else f"{gd} GD"
-                            break
-                            
-        res_away = requests.get(url, headers=headers, params={"search": away_team, "season": current_year}, timeout=8)
-        if res_away.status_code == 200:
-            records_a = res_away.json().get("response", [])
-            if records_a and isinstance(records_a, list) and len(records_a) > 0:
-                standings_lists_a = records_a[0].get("league", {}).get("standings", [])
-                if standings_lists_a and isinstance(standings_lists_a, list) and len(standings_lists_a) > 0:
-                    for team_entry in standings_lists_a[0]:
-                        t_name = team_entry.get("team", {}).get("name", "").lower()
-                        if away_team.lower()[:5] in t_name or t_name[:5] in away_team.lower():
+                        if away_team.lower() in t_name or t_name in away_team.lower():
                             gd = team_entry.get("goalsDiff", 0)
                             a_gd_str = f"+{gd} GD" if gd > 0 else f"{gd} GD"
-                            break
     except Exception as e: print(f"[-] Standing delay: {e}")
 
     return (
@@ -260,11 +245,11 @@ def execute_global_pitch_sweeps():
                     leagues_with_data += 1
                     for fx in fixtures_list:
                         total_matches_found += 1
+                        fx_id = fx.get("fixture", {}).get("id")
                         h_name = fx.get("teams", {}).get("home", {}).get("name", "Home")
                         a_name = fx.get("teams", {}).get("away", {}).get("name", "Away")
                         
-                        # Process live indicators using our custom fallback engine
-                        live_data = get_live_pitch_telemetry(h_name, a_name, league_api_id)
+                        live_data = get_live_pitch_telemetry(fx_id)
                         if live_data.get("active"):
                             l_home_odds = live_data.get("live_home_odds")
                             l_away_odds = live_data.get("live_away_odds")
@@ -272,13 +257,11 @@ def execute_global_pitch_sweeps():
                             current_minute = live_data.get("minute", 0)
                             current_score = live_data.get("score", "0-0")
                             
-                            # Log all valid positions to the Top 20 board under infinite configuration rules
                             if is_any_valid_market_selection(l_home_odds):
                                 all_discovered_favorites.append({"team": h_name, "odds": int(str(l_home_odds).replace("+","")), "match": f"{h_name} vs {a_name}", "league": league_title})
                             if is_any_valid_market_selection(l_away_odds):
                                 all_discovered_favorites.append({"team": a_name, "odds": int(str(l_away_odds).replace("+","")), "match": f"{h_name} vs {a_name}", "league": league_title})
                             
-                            # SYSTEM 7 & 1: Late-Game Volatility & Late Pressure Calibration Window
                             if current_minute >= 45 and current_score == "0-0":
                                 implied_p = convert_american_to_implied(l_home_odds)
                                 interval_alert = (
@@ -364,7 +347,7 @@ def execute_global_pitch_sweeps():
             
             if implied_p >= 0.55:
                 try:
-                    system_5_details = get_league_standings_and_audit(league_title, home, away)
+                    system_5_details = get_league_standings_and_audit(league_api_id, home, away)
                     fmt_h = f"+{home_odds_val}" if int(home_odds_val) > 0 else home_odds_val
                     fmt_d = f"+{draw_odds_val}" if int(draw_odds_val) > 0 else draw_odds_val
                     fmt_a = f"+{away_odds_val}" if int(away_odds_val) > 0 else away_odds_val
@@ -438,7 +421,8 @@ if __name__ == "__main__":
             send_discord_payload(summary_banner)
             last_ledger_dump_time = current_loop_time
         
+        # Designated sleep interval thresholds
         if central_hour >= 23 or central_hour < 3:
-            time.sleep(3600)
+            time.sleep(3600)  # Sleep for 1 hour during non-prime midnight windows
         else:
-            time.sleep(600)
+            time.sleep(600)   # Regular active sweep loop frequency configuration: 10 minutes (600 seconds)
