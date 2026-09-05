@@ -106,7 +106,8 @@ def monitor_live_pitches():
     
     for league in MASTER_BOOKIE_CATALOG:
         league_key = league["key"]
-        iso_now = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        past_time = datetime.datetime.utcnow() - datetime.timedelta(hours=3)
+        iso_now = past_time.strftime("%Y-%m-%dT%H:%M:%SZ")
         params = {"apiKey": LIVE_DATA_API_KEY, "regions": "us,eu", "markets": "h2h,totals", "oddsFormat": "american", "commenceTimeFrom": iso_now}
 
         try:
