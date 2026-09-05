@@ -343,17 +343,28 @@ if __name__ == "__main__":
     while True:
         execute_global_pitch_sweeps()
         
-        # Immediate active pipeline diagnostic validation
+        # Calculate current Central Time (CT) to drive the dynamic sleep valve
+        utc_now = datetime.datetime.now(datetime.timezone.utc)
+        # Central Time is UTC-6 (or UTC-5 during Daylight Saving Time)
+        central_hour = (utc_now.hour - 5) % 24 
+        
+        # Immediate active pipeline diagnostic validation banner
         test_payload = (
             f"🏎️ **CORVETTE FUND ENGINE — STATUS VERIFIED**\n\n"
             f"📡 **Operational Status:** Active Loop Online\n"
-            f"🔄 **Interval State:** 10-Minute Sweep Completed Cleanly\n"
+            f"🔄 **Interval State:** Sweep Completed Cleanly\n"
             f"💻 **Server Core:** Render Node Live"
         )
         send_discord_payload(test_payload)
         
-        print("[+] Sweep complete. Entering 10-minute rest buffer...")
-        time.sleep(600)
+        # SYSTEM HYBRID OVERRIDE DEAD-ZONE THROTTLE [11 PM to 3 AM Central]
+        if central_hour >= 23 or central_hour < 3:
+            print(f"[!] System entering late-night dead zone ({central_hour}:00 CT). Sleeping for 1 hour to conserve API tokens...")
+            time.sleep(3600)
+        else:
+            print(f"[+] System active in prime operational window ({central_hour}:00 CT). Entering standard 10-minute rest buffer...")
+            time.sleep(600)
+
 
 
 
