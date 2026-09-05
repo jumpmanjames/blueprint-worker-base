@@ -86,14 +86,13 @@ def send_discord_payload(content_str):
         # =====================================================================
         ledger_file = "bet_ledger.csv"
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        # Check if the file exists to write column headers on initialization
         file_exists = os.path.isfile(ledger_file)
         
         # Simple text cleaning to safely package details inside a CSV layout
-        clean_title = content_str.split("\n")[0].replace("🏎️", "").strip()
+        lines_list = content_str.split("\n")
+        clean_title = lines_list[0].replace("🏎️", "").strip() if lines_list else "System Alert"
         context_line = "General Signal Logs"
-        for line in content_str.split("\n"):
+        for line in lines_list:
             if "Match Context:" in line:
                 context_line = line.replace("**Match Context:**", "").strip()
                 break
@@ -105,10 +104,7 @@ def send_discord_payload(content_str):
             
         print(f"[+] Signal logged successfully inside system ledger sheet ({ledger_file})")
     except Exception as e:
-        print(f"[-] Ledger interface tracking failure: {e}")
-
-    except Exception as e:
-        print(f"[-] Discord dispatch fault: {e}")
+        print(f"[-] Transmission layer interface fault: {e}")
 
 def convert_american_to_implied(odds_val):
     try:
@@ -122,15 +118,16 @@ def convert_american_to_implied(odds_val):
 
 def parse_market_odds(bookmaker_data, market_key="h2h"):
     odds_map = {}
-    for market in bookmaker_data.get("markets", []):
-        if market.get("key") == market_key:
-            for outcome in market.get("outcomes", []):
-                odds_map[outcome.get("name")] = outcome.get("price")
+    if isinstance(bookmaker_data, dict):
+        for market in bookmaker_data.get("markets", []):
+            if market.get("key") == market_key:
+                for outcome in market.get("outcomes", []):
+                    odds_map[outcome.get("name")] = outcome.get("price")
     return odds_map
-    
 
 def get_live_pitch_telemetry(home_team, away_team):
-    "https://api-sports.io"
+    # Fixed official data pipeline API endpoint destination
+    url = "https://api-sports.io"
     headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
     params = {"live": "all"}
     try:
@@ -138,7 +135,6 @@ def get_live_pitch_telemetry(home_team, away_team):
         if res.status_code == 200:
             for fx in res.json().get("response", []):
                 h = fx.get("teams", {}).get("home", {}).get("name", "").lower()
-                a = fx.get("teams", {}).get("away", {}).get("name", "").lower()
                 if home_team.lower()[:5] in h or h[:5] in home_team.lower():
                     st = fx.get("fixture", {}).get("status", {})
                     el = st.get("elapsed", 0)
@@ -155,10 +151,8 @@ def get_live_pitch_telemetry(home_team, away_team):
                             mv = si.get("value") or 0
                             if isinstance(mv, str) and "%" in mv:
                                 mv = int(mv.replace("%", ""))
-                            if ts == "home":
-                                hs[mt] = mv
-                            else:
-                                as_[mt] = mv
+                            if ts == "home": hs[mt] = mv
+                            else: as_[mt] = mv
                     return {
                         "active": True, "clock": lbl, "minute": el, "score": f"{gh}-{ga}",
                         "goals_home": gh, "goals_away": ga, "xg_home": hs.get("Expected Goals", "N/A"),
@@ -171,24 +165,26 @@ def get_live_pitch_telemetry(home_team, away_team):
                         "corners_away": as_.get("Corner Kicks", 0), "red_home": hs.get("Red Cards", 0), "red_away": as_.get("Red Cards", 0)
                     }
     except Exception as e:
-        print(f"[-] Telemetry error: {e}")
-    return {"active": False, "minute": 0, "score": "0-0"}
+        print(f"[-] Telemetry collection structural bypass: {e}")
+    return {"active": False, "minute": 0, "score": "0-0", "dang_attacks_home": 0}
 
-def get_league_standings_and_audit(league_title, home_team, away_team): 
-    "https://api-sports.io"
+def get_league_standings_and_audit(league_title, home_team, away_team):
+    # Fixed official data pipeline standings lookup destination
+    url = "https://api-sports.io"
     headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
     
     h_gd_str = "+0 GD"
     a_gd_str = "+0 GD"
+    current_year = datetime.datetime.now().year
     
     try:
-        res = requests.get(url, headers=headers, params={"search": home_team}, timeout=8)
+        res = requests.get(url, headers=headers, params={"search": home_team, "season": current_year}, timeout=8)
         if res.status_code == 200:
             standings_records = res.json().get("response", [])
             if standings_records and isinstance(standings_records, list):
                 league_obj = standings_records[0].get("league", {})
                 standings_lists = league_obj.get("standings", [])
-                if standings_lists and isinstance(standings_lists, list):
+                if standings_lists and isinstance(standings_lists, list) and len(standings_lists) > 0:
                     for team_entry in standings_lists[0]:
                         t_name = team_entry.get("team", {}).get("name", "").lower()
                         if home_team.lower()[:5] in t_name or t_name[:5] in home_team.lower():
@@ -196,13 +192,13 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
                             h_gd_str = f"+{gd} GD" if gd > 0 else f"{gd} GD"
                             break
                         
-        res_away = requests.get(url, headers=headers, params={"search": away_team}, timeout=8)
+        res_away = requests.get(url, headers=headers, params={"search": away_team, "season": current_year}, timeout=8)
         if res_away.status_code == 200:
             standings_records_a = res_away.json().get("response", [])
             if standings_records_a and isinstance(standings_records_a, list):
                 league_obj_a = standings_records_a[0].get("league", {})
                 standings_lists_a = league_obj_a.get("standings", [])
-                if standings_lists_a and isinstance(standings_lists_a, list):
+                if standings_lists_a and isinstance(standings_lists_a, list) and len(standings_lists_a) > 0:
                     for team_entry in standings_lists_a[0]:
                         t_name = team_entry.get("team", {}).get("name", "").lower()
                         if away_team.lower()[:5] in t_name or t_name[:5] in away_team.lower():
@@ -222,6 +218,7 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
         f"4. **Hierarchy Mismatch:** Sports Mole final score consensus matches historical caliber patterns.\n"
         f"   **STATUS: PASS** 🟢"
     )
+
 
 
 # =====================================================================
@@ -280,9 +277,9 @@ def execute_global_pitch_sweeps():
                         if bm.get("title") in ["Bet365", "DraftKings", "FanDuel", "Bovada"]:
                             target_bookmaker = bm
                             break
-                    if not target_bookmaker:
-                        target_bookmaker = bookmakers_list[0]
-                        
+                        if not target_bookmaker and len(bookmakers_list) > 0:
+                            target_bookmaker = bookmakers_list[0]
+      
                 if not target_bookmaker:
                     continue
                 
