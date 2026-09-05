@@ -130,7 +130,7 @@ def parse_market_odds(bookmaker_data, market_key="h2h"):
     
 
 def get_live_pitch_telemetry(home_team, away_team):
-    url = "https://api-sports.io"
+    "https://api-sports.io"
     headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
     params = {"live": "all"}
     try:
@@ -174,8 +174,8 @@ def get_live_pitch_telemetry(home_team, away_team):
         print(f"[-] Telemetry error: {e}")
     return {"active": False, "minute": 0, "score": "0-0"}
 
-def get_league_standings_and_audit(league_title, home_team, away_team):
-    url = "https://api-sports.io"
+def get_league_standings_and_audit(league_title, home_team, away_team): 
+    "https://api-sports.io"
     headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
     
     h_gd_str = "+0 GD"
