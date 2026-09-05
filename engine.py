@@ -14,68 +14,334 @@ API_FOOTBALL_KEY = os.environ.get("API_FOOTBALL_KEY")
 if not DISCORD_WEBHOOK_URL or not LIVE_DATA_API_KEY or not API_FOOTBALL_KEY:
     print("[-] Critical secure tokens missing from Environment Variables.")
     sys.exit(1)
+
 # =====================================================================
-# MASTER BOOKIE CATALOG: MAPPED LEAGUE CODES (PART 1)
+# MASTER BOOKIE CROSS-REFERENCED CATALOG (PART 1)
+# Cross-referencing alternative names across Sportsbooks, Google, and APIs
 # =====================================================================
 MASTER_BOOKIE_CATALOG = [
-    {"key": "soccer_uefa_nations_league", "title": "UEFA Nations League", "api_id": 4},
-    {"key": "soccer_intl_wcup_qual_europe", "title": "FIFA World Cup Qualifiers - Europe", "api_id": 3},
-    {"key": "soccer_international_friendly", "title": "International Friendlies", "api_id": 10},
-    {"key": "soccer_usa_mls", "title": "USA MLS", "api_id": 253},
-    {"key": "soccer_usa_usl_championship", "title": "USA USL Championship", "api_id": 255},
-    {"key": "soccer_chile_campeonato", "title": "Chile Liga de Primera", "api_id": 265},
-    {"key": "soccer_ecuador_serie_a", "title": "Ecuador LigaPro Serie A", "api_id": 242},
-    {"key": "soccer_epl", "title": "England Premier League", "api_id": 39},
-    {"key": "soccer_england_championship", "title": "England Championship", "api_id": 40},
-    {"key": "soccer_england_league1", "title": "England League 1", "api_id": 41},
-    {"key": "soccer_england_league2", "title": "England League 2", "api_id": 42},
-    {"key": "soccer_england_efl_cup", "title": "England EFL Cup", "api_id": 48},
-    {"key": "soccer_scotland_premier", "title": "Scotland Premiership", "api_id": 179},
-    {"key": "soccer_scotland_championship", "title": "Scotland Championship", "api_id": 180},
-    {"key": "soccer_spain_la_liga", "title": "Spain La Liga", "api_id": 140},
-    {"key": "soccer_spain_segunda_division", "title": "Spain Segunda", "api_id": 141},
-    {"key": "soccer_italy_serie_a", "title": "Italy Serie A", "api_id": 135},
-    {"key": "soccer_italy_serie_b", "title": "Italy Serie B", "api_id": 136},
-    {"key": "soccer_germany_bundesliga", "title": "Germany Bundesliga I", "api_id": 78},
-    {"key": "soccer_germany_bundesliga2", "title": "Germany Bundesliga II", "api_id": 79},
-    {"key": "soccer_germany_3liga", "title": "Germany 3.Liga", "api_id": 80},
-    {"key": "soccer_france_ligue_one", "title": "France Ligue 1", "api_id": 61},
-    {"key": "soccer_france_ligue_two", "title": "France Ligue 2", "api_id": 62},
-    {"key": "soccer_netherlands_eredivisie", "title": "Netherlands Eredivisie", "api_id": 88}
+    {
+        "key": "soccer_uefa_nations_league", 
+        "title": "UEFA Nations League", 
+        "api_id": 4,
+        "aliases": ["uefa nations league", "nations league", "uefa nations"]
+    },
+    {
+        "key": "soccer_intl_wcup_qual_europe", 
+        "title": "FIFA World Cup Qualifiers - Europe", 
+        "api_id": 3,
+        "aliases": ["fifa world cup qualifiers - europe", "world cup qual - europe", "wc qualification europe", "world cup qualifiers", "europe - world cup qualification"]
+    },
+    {
+        "key": "soccer_international_friendly", 
+        "title": "International Friendlies", 
+        "api_id": 10,
+        "aliases": ["international friendlies", "intl friendly", "friendly", "friendlies", "international friendly", "club friendly", "club friendlies"]
+    },
+    {
+        "key": "soccer_usa_mls", 
+        "title": "USA MLS", 
+        "api_id": 253,
+        "aliases": ["usa mls", "mls", "major league soccer", "usa major league soccer"]
+    },
+    {
+        "key": "soccer_usa_usl_championship", 
+        "title": "USA USL Championship", 
+        "api_id": 255,
+        "aliases": ["usa usl championship", "usl championship", "usl 1", "usl championship"]
+    },
+    {
+        "key": "soccer_chile_campeonato", 
+        "title": "Chile Liga de Primera", 
+        "api_id": 265,
+        "aliases": ["chile liga de primera", "primera division", "chile primera division", "campeonato nacional", "primera division de chile"]
+    },
+    {
+        "key": "soccer_ecuador_serie_a", 
+        "title": "Ecuador LigaPro Serie A", 
+        "api_id": 242,
+        "aliases": ["ecuador ligapro serie a", "ligapro serie a", "ecuador serie a", "ligapro", "serie a de ecuador"]
+    },
+    {
+        "key": "soccer_epl", 
+        "title": "England Premier League", 
+        "api_id": 39,
+        "aliases": ["england premier league", "premier league", "epl", "english premier league"]
+    }
 ]
 # =====================================================================
-# MASTER BOOKIE CATALOG: MAPPED LEAGUE CODES (PART 2)
+# MASTER BOOKIE CROSS-REFERENCED CATALOG (PART 2)
 # =====================================================================
 MASTER_BOOKIE_CATALOG.extend([
-    {"key": "soccer_portugal_primeira_liga", "title": "Portugal Primeira Liga", "api_id": 94},
-    {"key": "soccer_austria_bundesliga", "title": "Austria Bundesliga", "api_id": 218},
-    {"key": "soccer_belgium_first_div", "title": "Belgium First Division A", "api_id": 144},
-    {"key": "soccer_bulgaria_first_league", "title": "Bulgaria First League", "api_id": 172},
-    {"key": "soccer_croatia_hnl", "title": "Croatia HNL", "api_id": 210},
-    {"key": "soccer_czech_republic_first_league", "title": "Czechia First League", "api_id": 345},
-    {"key": "soccer_denmark_superliga", "title": "Denmark Superligaen", "api_id": 119},
-    {"key": "soccer_greece_super_league", "title": "Greece Super League 1", "api_id": 197},
-    {"key": "soccer_hungary_nb1", "title": "Hungary NB I", "api_id": 271},
-    {"key": "soccer_norway_eliteserien", "title": "Norway Eliteserien", "api_id": 103},
-    {"key": "soccer_poland_ekstraklasa", "title": "Poland Ekstraklasa", "api_id": 106},
-    {"key": "soccer_romania_liga1", "title": "Romania Liga I", "api_id": 283},
-    {"key": "soccer_serbia_super_liga", "title": "Serbia Super Liga", "api_id": 286},
-    {"key": "soccer_slovakia_super_liga", "title": "Slovakia Super Liga", "api_id": 332},
-    {"key": "soccer_slovenia_prva_liga", "title": "Slovenia Prva Liga", "api_id": 327},
-    {"key": "soccer_sweden_allsvenskan", "title": "Sweden Allsvenskan", "api_id": 113},
-    {"key": "soccer_switzerland_superleague", "title": "Switzerland Super League", "api_id": 207},
-    {"key": "soccer_turkey_super_lig", "title": "Türkiye Super Lig", "api_id": 203},
-    {"key": "soccer_mexico_ligamx", "title": "Mexico Liga MX", "api_id": 262},
-    {"key": "soccer_brazil_campeonato", "title": "Brazil Serie A", "api_id": 71},
-    {"key": "soccer_argentina_primavera", "title": "Argentina Liga Profesional", "api_id": 128},
-    {"key": "soccer_colombia_primera_a", "title": "Colombia Primera A", "api_id": 239},
-    {"key": "soccer_china_super_league", "title": "China Super League", "api_id": 169},
-    {"key": "soccer_japan_j_league", "title": "Japan J-League", "api_id": 98},
-    {"key": "soccer_south_korea_k_league_1", "title": "South Korea K League 1", "api_id": 292},
-    {"key": "soccer_saudi_arabia_pro_league", "title": "Saudi Arabia Pro League", "api_id": 307},
-    {"key": "soccer_australia_aleague", "title": "Australia A-League", "api_id": 351}
+    {
+        "key": "soccer_england_championship", 
+        "title": "England Championship", 
+        "api_id": 40,
+        "aliases": ["england championship", "championship", "efl championship", "english championship"]
+    },
+    {
+        "key": "soccer_england_league1", 
+        "title": "England League 1", 
+        "api_id": 41,
+        "aliases": ["england league 1", "league one", "efl league one", "england league one"]
+    },
+    {
+        "key": "soccer_england_league2", 
+        "title": "England League 2", 
+        "api_id": 42,
+        "aliases": ["england league 2", "league two", "efl league two", "england league two"]
+    },
+    {
+        "key": "soccer_england_efl_cup", 
+        "title": "England EFL Cup", 
+        "api_id": 48,
+        "aliases": ["england efl cup", "efl cup", "league cup", "carabao cup", "england league cup"]
+    },
+    {
+        "key": "soccer_scotland_premier", 
+        "title": "Scotland Premiership", 
+        "api_id": 179,
+        "aliases": ["scotland premiership", "premiership", "scottish premiership", "scotland premier league"]
+    },
+    {
+        "key": "soccer_scotland_championship", 
+        "title": "Scotland Championship", 
+        "api_id": 180,
+        "aliases": ["scotland championship", "scottish championship"]
+    },
+    {
+        "key": "soccer_spain_la_liga", 
+        "title": "Spain La Liga", 
+        "api_id": 140,
+        "aliases": ["spain la liga", "la liga", "laliga", "spain primera division", "la liga santander"]
+    },
+    {
+        "key": "soccer_spain_segunda_division", 
+        "title": "Spain Segunda", 
+        "api_id": 141,
+        "aliases": ["spain segunda", "segunda division", "la liga 2", "laliga 2", "spain segunda division"]
+    },
+    {
+        "key": "soccer_italy_serie_a", 
+        "title": "Italy Serie A", 
+        "api_id": 135,
+        "aliases": ["italy serie a", "serie a", "serie a tim", "italian serie a"]
+    },
+    {
+        "key": "soccer_italy_serie_b", 
+        "title": "Italy Serie B", 
+        "api_id": 136,
+        "aliases": ["italy serie b", "serie b", "serie bkt", "italian serie b"]
+    },
+    {
+        "key": "soccer_germany_bundesliga", 
+        "title": "Germany Bundesliga I", 
+        "api_id": 78,
+        "aliases": ["germany bundesliga i", "bundesliga", "german bundesliga", "bundesliga 1"]
+    },
+    {
+        "key": "soccer_germany_bundesliga2", 
+        "title": "Germany Bundesliga II", 
+        "api_id": 79,
+        "aliases": ["germany bundesliga ii", "2. bundesliga", "2 bundesliga", "german bundesliga 2"]
+    },
+    {
+        "key": "soccer_germany_3liga", 
+        "title": "Germany 3.Liga", 
+        "api_id": 80,
+        "aliases": ["germany 3.liga", "3. liga", "3 liga", "german 3. liga"]
+    }
 ])
-
+# =====================================================================
+# MASTER BOOKIE CROSS-REFERENCED CATALOG (PART 3)
+# =====================================================================
+MASTER_BOOKIE_CATALOG.extend([
+    {
+        "key": "soccer_france_ligue_one", 
+        "title": "France Ligue 1", 
+        "api_id": 61,
+        "aliases": ["france ligue 1", "ligue 1", "french ligue 1", "ligue 1 uber eats", "france ligue one"]
+    },
+    {
+        "key": "soccer_france_ligue_two", 
+        "title": "France Ligue 2", 
+        "api_id": 62,
+        "aliases": ["france ligue 2", "ligue 2", "french ligue 2", "france ligue two"]
+    },
+    {
+        "key": "soccer_netherlands_eredivisie", 
+        "title": "Netherlands Eredivisie", 
+        "api_id": 88,
+        "aliases": ["netherlands eredivisie", "eredivisie", "dutch eredivisie"]
+    },
+    {
+        "key": "soccer_portugal_primeira_liga", 
+        "title": "Portugal Primeira Liga", 
+        "api_id": 94,
+        "aliases": ["portugal primeira liga", "primeira liga", "portuguese primeira liga", "liga portugal"]
+    },
+    {
+        "key": "soccer_austria_bundesliga", 
+        "title": "Austria Bundesliga", 
+        "api_id": 218,
+        "aliases": ["austria bundesliga", "austrian bundesliga", "bundesliga austria"]
+    },
+    {
+        "key": "soccer_belgium_first_div", 
+        "title": "Belgium First Division A", 
+        "api_id": 144,
+        "aliases": ["belgium first division a", "pro league", "belgian pro league", "jupiler pro league", "belgium pro league"]
+    },
+    {
+        "key": "soccer_bulgaria_first_league", 
+        "title": "Bulgaria First League", 
+        "api_id": 172,
+        "aliases": ["bulgaria first league", "parva liga", "bulgarian first league", "first league"]
+    },
+    {
+        "key": "soccer_croatia_hnl", 
+        "title": "Croatia HNL", 
+        "api_id": 210,
+        "aliases": ["croatia hnl", "hnl", "croatian hnl", "1. hnl"]
+    },
+    {
+        "key": "soccer_czech_republic_first_league", 
+        "title": "Czechia First League", 
+        "api_id": 345,
+        "aliases": ["czechia first league", "czech first league", "fortuna liga", "czech republic first league"]
+    }
+])
+# =====================================================================
+# MASTER BOOKIE CROSS-REFERENCED CATALOG (PART 4)
+# =====================================================================
+MASTER_BOOKIE_CATALOG.extend([
+    {
+        "key": "soccer_denmark_superliga", 
+        "title": "Denmark Superligaen", 
+        "api_id": 119,
+        "aliases": ["denmark superligaen", "superligaen", "danish superliga", "superliga", "denmark superliga"]
+    },
+    {
+        "key": "soccer_greece_super_league", 
+        "title": "Greece Super League 1", 
+        "api_id": 197,
+        "aliases": ["greece super league 1", "super league", "greek super league", "super league greece"]
+    },
+    {
+        "key": "soccer_hungary_nb1", 
+        "title": "Hungary NB I", 
+        "api_id": 271,
+        "aliases": ["hungary nb i", "nb i", "hungarian nb 1", "otp bank liga", "hungary nb 1"]
+    },
+    {
+        "key": "soccer_norway_eliteserien", 
+        "title": "Norway Eliteserien", 
+        "api_id": 103,
+        "aliases": ["norway eliteserien", "eliteserien", "norwegian eliteserien"]
+    },
+    {
+        "key": "soccer_poland_ekstraklasa", 
+        "title": "Poland Ekstraklasa", 
+        "api_id": 106,
+        "aliases": ["poland ekstraklasa", "ekstraklasa", "polish ekstraklasa"]
+    },
+    {
+        "key": "soccer_romania_liga1", 
+        "title": "Romania Liga I", 
+        "api_id": 283,
+        "aliases": ["romania liga i", "liga i", "romanian liga 1", "superliga romania", "romania liga 1"]
+    },
+    {
+        "key": "soccer_serbia_super_liga", 
+        "title": "Serbia Super Liga", 
+        "api_id": 286,
+        "aliases": ["serbia super liga", "super liga", "serbian super liga"]
+    },
+    {
+        "key": "soccer_slovakia_super_liga", 
+        "title": "Slovakia Super Liga", 
+        "api_id": 332,
+        "aliases": ["slovakia super liga", "super liga slovakia", "slovak super liga", "fortuna liga slovakia"]
+    },
+    {
+        "key": "soccer_slovenia_prva_liga", 
+        "title": "Slovenia Prva Liga", 
+        "api_id": 327,
+        "aliases": ["slovenia prva liga", "prva liga", "slovenian prva liga"]
+    },
+    {
+        "key": "soccer_sweden_allsvenskan", 
+        "title": "Sweden Allsvenskan", 
+        "api_id": 113,
+        "aliases": ["sweden allsvenskan", "allsvenskan", "swedish allsvenskan"]
+    },
+    {
+        "key": "soccer_switzerland_superleague", 
+        "title": "Switzerland Super League", 
+        "api_id": 207,
+        "aliases": ["switzerland super league", "swiss super league", "super league switzerland"]
+    },
+    {
+        "key": "soccer_turkey_super_lig", 
+        "title": "Türkiye Super Lig", 
+        "api_id": 203,
+        "aliases": ["türkiye super lig", "super lig", "turkish super lig", "turkey super lig", "süper lig"]
+    },
+    {
+        "key": "soccer_mexico_ligamx", 
+        "title": "Mexico Liga MX", 
+        "api_id": 262,
+        "aliases": ["mexico liga mx", "liga mx", "mexican liga mx", "liga bancomer mx"]
+    },
+    {
+        "key": "soccer_brazil_campeonato", 
+        "title": "Brazil Serie A", 
+        "api_id": 71,
+        "aliases": ["brazil serie a", "serie a", "campeonato brasileiro", "brazilian serie a", "brasileirão"]
+    },
+    {
+        "key": "soccer_argentina_primavera", 
+        "title": "Argentina Liga Profesional", 
+        "api_id": 128,
+        "aliases": ["argentina liga profesional", "liga profesional", "argentina primera division", "primera division argentina"]
+    },
+    {
+        "key": "soccer_colombia_primera_a", 
+        "title": "Colombia Primera A", 
+        "api_id": 239,
+        "aliases": ["colombia primera a", "primera a", "colombian primera a", "liga betplay"]
+    },
+    {
+        "key": "soccer_china_super_league", 
+        "title": "China Super League", 
+        "api_id": 169,
+        "aliases": ["china super league", "csl", "chinese super league"]
+    },
+    {
+        "key": "soccer_japan_j_league", 
+        "title": "Japan J-League", 
+        "api_id": 98,
+        "aliases": ["japan j-league", "j1 league", "j-league", "japanese j league"]
+    },
+    {
+        "key": "soccer_south_korea_k_league_1", 
+        "title": "South Korea K League 1", 
+        "api_id": 292,
+        "aliases": ["south korea k league 1", "k league 1", "south korean k league", "k league"]
+    },
+    {
+        "key": "soccer_saudi_arabia_pro_league", 
+        "title": "Saudi Arabia Pro League", 
+        "api_id": 307,
+        "aliases": ["saudi arabia pro league", "saudi pro league", "roshn saudi league", "saudi league"]
+    },
+    {
+        "key": "soccer_australia_aleague", 
+        "title": "Australia A-League", 
+        "api_id": 351,
+        "aliases": ["australia a-league", "a-league", "australian a league"]
+    }
+])
 # =====================================================================
 # TRANSMISSION INTERFACE & UTILITIES
 # =====================================================================
@@ -123,58 +389,62 @@ def parse_market_odds(bookmaker_data, market_key="h2h"):
                 for outcome in market.get("outcomes", []):
                     odds_map[outcome.get("name")] = outcome.get("price")
     return odds_map
-def get_live_pitch_telemetry(fixture_id):
+def get_live_pitch_telemetry(home_team, away_team, league_id=None):
     url = "https://api-sports.io"
     headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
-    params = {"id": fixture_id}
+    params = {"live": "all"}
+    if league_id:
+        params["league"] = league_id
         
     try:
         res = requests.get(url, headers=headers, params=params, timeout=10)
         if res.status_code == 200:
-            data = res.json().get("response", [])
-            if data and len(data) > 0:
-                fx = data[0]
-                st = fx.get("fixture", {}).get("status", {})
-                el = st.get("elapsed", 0)
-                ex = st.get("extra", None)
-                lbl = f"{el}'" if not ex else f"{el}+{ex}'"
-                gh = fx.get("goals", {}).get("home", 0)
-                ga = fx.get("goals", {}).get("away", 0)
+            for fx in res.json().get("response", []):
+                h = fx.get("teams", {}).get("home", {}).get("name", "").lower()
+                a_team = fx.get("teams", {}).get("away", {}).get("name", "").lower()
                 
-                sl = fx.get("statistics", [])
-                hs, as_ = {}, {}
-                for sg in sl:
-                    team_side = sg.get("team", {}).get("id")
-                    fx_home_id = fx.get("teams", {}).get("home", {}).get("id")
-                    ts = "home" if team_side == fx_home_id else "away"
-                    for si in sg.get("statistics", []):
-                        mt = si.get("type")
-                        mv = si.get("value") or 0
-                        if isinstance(mv, str) and "%" in mv: mv = int(mv.replace("%", ""))
-                        if ts == "home": hs[mt] = mv
-                        else: as_[mt] = mv
-                        
-                live_home_odds, live_away_odds, live_draw_odds = "+100", "+100", "+100"
-                try:
-                    odds_url = "https://api-sports.io"
-                    odds_res = requests.get(odds_url, headers=headers, params={"fixture": fixture_id}, timeout=5)
-                    if odds_res.status_code == 200:
-                        odds_data = odds_res.json().get("response", [])
-                        for entry in odds_data:
-                            for mkt in entry.get("odds", []):
-                                if mkt.get("name") == "Match Winner":
-                                    for values in mkt.get("values", []):
-                                        if values.get("value") == "Home": live_home_odds = values.get("odd")
-                                        elif values.get("value") == "Away": live_away_odds = values.get("odd")
-                                        elif values.get("value") == "Draw": live_draw_odds = values.get("odd")
-                except Exception as odds_err:
-                    print(f"[-] Live odds check bypassed: {odds_err}")
-                
-                return {
-                    "active": True, "clock": lbl, "minute": el, "score": f"{gh}-{ga}",
-                    "dang_attacks_home": hs.get("Dangerous Attacks", 0),
-                    "live_home_odds": live_home_odds, "live_away_odds": live_away_odds, "live_draw_odds": live_draw_odds
-                }
+                # Loose matching to allow for slight spelling variances across providers
+                if (home_team.lower()[:4] in h or h[:4] in home_team.lower()) or (away_team.lower()[:4] in a_team or a_team[:4] in away_team.lower()):
+                    st = fx.get("fixture", {}).get("status", {})
+                    el = st.get("elapsed", 0)
+                    ex = st.get("extra", None)
+                    lbl = f"{el}'" if not ex else f"{el}+{ex}'"
+                    gh = fx.get("goals", {}).get("home", 0)
+                    ga = fx.get("goals", {}).get("away", 0)
+                    fx_id = fx.get("fixture", {}).get("id")
+                    
+                    sl = fx.get("statistics", [])
+                    hs, as_ = {}, {}
+                    for sg in sl:
+                        ts = "home" if sg.get("team", {}).get("name", "").lower() == h else "away"
+                        for si in sg.get("statistics", []):
+                            mt = si.get("type")
+                            mv = si.get("value") or 0
+                            if isinstance(mv, str) and "%" in mv: mv = int(mv.replace("%", ""))
+                            if ts == "home": hs[mt] = mv
+                            else: as_[mt] = mv
+                            
+                    live_home_odds, live_away_odds, live_draw_odds = "+100", "+100", "+100"
+                    try:
+                        odds_url = "https://api-sports.io"
+                        odds_res = requests.get(odds_url, headers=headers, params={"fixture": fx_id}, timeout=5)
+                        if odds_res.status_code == 200:
+                            odds_data = odds_res.json().get("response", [])
+                            for entry in odds_data:
+                                for mkt in entry.get("odds", []):
+                                    if mkt.get("name") == "Match Winner":
+                                        for values in mkt.get("values", []):
+                                            if values.get("value") == "Home": live_home_odds = values.get("odd")
+                                            elif values.get("value") == "Away": live_away_odds = values.get("odd")
+                                            elif values.get("value") == "Draw": live_draw_odds = values.get("odd")
+                    except Exception as odds_err:
+                        print(f"[-] Live odds check bypassed: {odds_err}")
+                    
+                    return {
+                        "active": True, "clock": lbl, "minute": el, "score": f"{gh}-{ga}",
+                        "dang_attacks_home": hs.get("Dangerous Attacks", 0),
+                        "live_home_odds": live_home_odds, "live_away_odds": live_away_odds, "live_draw_odds": live_draw_odds
+                    }
     except Exception as e: print(f"[-] Telemetry error: {e}")
     return {"active": False, "minute": 0, "score": "0-0", "dang_attacks_home": 0, "live_home_odds": "+100", "live_away_odds": "+100", "live_draw_odds": "+100"}
 
@@ -193,10 +463,10 @@ def get_league_standings_and_audit(league_id, home_team, away_team):
                 if standings_lists and isinstance(standings_lists, list) and len(standings_lists) > 0:
                     for team_entry in standings_lists[0]:
                         t_name = team_entry.get("team", {}).get("name", "").lower()
-                        if home_team.lower() in t_name or t_name in home_team.lower():
+                        if home_team.lower()[:4] in t_name or t_name[:4] in home_team.lower():
                             gd = team_entry.get("goalsDiff", 0)
                             h_gd_str = f"+{gd} GD" if gd > 0 else f"{gd} GD"
-                        if away_team.lower() in t_name or t_name in away_team.lower():
+                        if away_team.lower()[:4] in t_name or t_name[:4] in away_team.lower():
                             gd = team_entry.get("goalsDiff", 0)
                             a_gd_str = f"+{gd} GD" if gd > 0 else f"{gd} GD"
     except Exception as e: print(f"[-] Standing delay: {e}")
@@ -229,51 +499,61 @@ def execute_global_pitch_sweeps():
     leagues_with_data = 0
     total_matches_found = 0
     
-    for sport_item in MASTER_BOOKIE_CATALOG:
-        league_key = sport_item["key"]
-        league_title = sport_item["title"]
-        league_api_id = sport_item.get("api_id")
+    # 1. Direct Live In-Play Pipeline checking across multi-provider name aliases
+    try:
+        live_url = "https://api-sports.io"
+        live_headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
+        live_res = requests.get(live_url, headers=live_headers, params={"live": "all"}, timeout=10)
         
-        # 1. API-Football Live In-Play Direct Engine Sweep
-        try:
-            live_url = "https://api-sports.io"
-            live_headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
-            live_res = requests.get(live_url, headers=live_headers, params={"live": "all", "league": league_api_id}, timeout=10)
-            if live_res.status_code == 200:
-                fixtures_list = live_res.json().get("response", [])
-                if fixtures_list:
-                    leagues_with_data += 1
-                    for fx in fixtures_list:
-                        total_matches_found += 1
-                        fx_id = fx.get("fixture", {}).get("id")
-                        h_name = fx.get("teams", {}).get("home", {}).get("name", "Home")
-                        a_name = fx.get("teams", {}).get("away", {}).get("name", "Away")
+        if live_res.status_code == 200:
+            fixtures_list = live_res.json().get("response", [])
+            for fx in fixtures_list:
+                api_league_name = fx.get("league", {}).get("name", "").lower()
+                api_league_id = fx.get("league", {}).get("id")
+                
+                # Cross-reference the live game using your hard-earned multi-alias parameters list
+                target_league_item = None
+                for item in MASTER_BOOKIE_CATALOG:
+                    if item["api_id"] == api_league_id or any(alias in api_league_name for alias in item["aliases"]):
+                        target_league_item = item
+                        break
                         
-                        live_data = get_live_pitch_telemetry(fx_id)
-                        if live_data.get("active"):
-                            l_home_odds = live_data.get("live_home_odds")
-                            l_away_odds = live_data.get("live_away_odds")
-                            l_draw_odds = live_data.get("live_draw_odds")
-                            current_minute = live_data.get("minute", 0)
-                            current_score = live_data.get("score", "0-0")
-                            
-                            if is_any_valid_market_selection(l_home_odds):
-                                all_discovered_favorites.append({"team": h_name, "odds": int(str(l_home_odds).replace("+","")), "match": f"{h_name} vs {a_name}", "league": league_title})
-                            if is_any_valid_market_selection(l_away_odds):
-                                all_discovered_favorites.append({"team": a_name, "odds": int(str(l_away_odds).replace("+","")), "match": f"{h_name} vs {a_name}", "league": league_title})
-                            
-                            if current_minute >= 45 and current_score == "0-0":
-                                implied_p = convert_american_to_implied(l_home_odds)
-                                interval_alert = (
-                                    f"\U0001F3CE **CORVETTE FUND BLUEPRINT \u2014 LIVE STRATEGY SIGNAL**\n\n"
-                                    f"* **The Play Target:** Live Value entry window active for **{h_name} vs {a_name}**\n"
-                                    f"* **Live American Odds:** Home Winner ML: {l_home_odds} | Draw: {l_draw_odds} | Away Winner ML: {l_away_odds}\n"
-                                    f"* **The Value Discrepancy Math:** Implied Chance {implied_p:.1%} vs Live Volatility Corridor.\n"
-                                    f"* **Why the data holds the edge:** Game clock verified at {live_data.get('clock')} mark sitting at balanced scoreline ({current_score}). Live attack velocity registers {live_data.get('dang_attacks_home')} Dangerous Attacks."
-                                )
-                                send_discord_payload(interval_alert)
-        except Exception as api_sports_err:
-            print(f"[-] Live sports collection exception for {league_title}: {api_sports_err}")
+                if not target_league_item:
+                    continue  # Skip any matches outside your custom 48-league blueprint catalog
+                    
+                total_matches_found += 1
+                leagues_with_data += 1
+                h_name = fx.get("teams", {}).get("home", {}).get("name", "Home")
+                a_name = fx.get("teams", {}).get("away", {}).get("name", "Away")
+                
+                # Run real-time telemetry extraction rules
+                live_data = get_live_pitch_telemetry(h_name, a_name, target_league_item["api_id"])
+                if live_data.get("active"):
+                    l_home_odds = live_data.get("live_home_odds")
+                    l_away_odds = live_data.get("live_away_odds")
+                    l_draw_odds = live_data.get("live_draw_odds")
+                    current_minute = live_data.get("minute", 0)
+                    current_score = live_data.get("score", "0-0")
+                    
+                    # Track entries into your continuous, infinite target tracking layout
+                    if is_any_valid_market_selection(l_home_odds):
+                        all_discovered_favorites.append({"team": h_name, "odds": int(str(l_home_odds).replace("+","")), "match": f"{h_name} vs {a_name}", "league": target_league_item["title"]})
+                    if is_any_valid_market_selection(l_away_odds):
+                        all_discovered_favorites.append({"team": a_name, "odds": int(str(l_away_odds).replace("+","")), "match": f"{h_name} vs {a_name}", "league": target_league_item["title"]})
+                    
+                    # SYSTEMS 1 & 7: Volatility and Late-Stage Pressure Window Alerts
+                    if current_minute >= 45 and current_score == "0-0":
+                        implied_p = convert_american_to_implied(l_home_odds)
+                        interval_alert = (
+                            f"\U0001F3CE **CORVETTE FUND BLUEPRINT \u2014 LIVE STRATEGY SIGNAL**\n\n"
+                            f"* **The Play Target:** Live Value entry window active for **{h_name} vs {a_name}**\n"
+                            f"* **Live American Odds:** Home Winner ML: {l_home_odds} | Draw: {l_draw_odds} | Away Winner ML: {l_away_odds}\n"
+                            f"* **The Value Discrepancy Math:** Implied Chance {implied_p:.1%} vs Live Volatility Corridor.\n"
+                            f"* **Why the data holds the edge:** Game clock verified at {live_data.get('clock')} mark sitting at balanced scoreline ({current_score}). Live attack velocity registers {live_data.get('dang_attacks_home')} Dangerous Attacks."
+                        )
+                        send_discord_payload(interval_alert)
+    except Exception as api_sports_err:
+        print(f"[-] Live sports collection engine execution fault: {api_sports_err}")
         # 2. Pre-Match Backup Pipeline via The Odds API
         url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
         params = {
@@ -308,7 +588,7 @@ def execute_global_pitch_sweeps():
             is_live = commence_dt <= current_time_utc
             
             if is_live:
-                continue # Handled dynamically by our API-Football live engine block above
+                continue  # Dynamic in-play matches are captured natively above by our cross-referenced live engine block
                 
             target_bookmaker = None
             bookmakers_list = fixture.get("bookmakers", [])
@@ -421,8 +701,8 @@ if __name__ == "__main__":
             send_discord_payload(summary_banner)
             last_ledger_dump_time = current_loop_time
         
-        # Designated sleep interval thresholds
+        # Strategic power saving rest periods (11 PM Central to 3 AM Central)
         if central_hour >= 23 or central_hour < 3:
-            time.sleep(3600)  # Sleep for 1 hour during non-prime midnight windows
+            time.sleep(3600)  # Sleep for 1 hour during low-volume overnight slates
         else:
-            time.sleep(600)   # Regular active sweep loop frequency configuration: 10 minutes (600 seconds)
+            time.sleep(600)   # Active runtime sweep frequency configuration: 10 minutes (600 seconds)
