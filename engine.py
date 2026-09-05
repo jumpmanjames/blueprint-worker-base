@@ -213,10 +213,7 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
 def execute_global_pitch_sweeps():
     print("[+] Ingestion engine active. Executing full global sweep...")
     current_time_utc = datetime.datetime.now(datetime.timezone.utc)
-    
-    # SYSTEM OVERRIDE: 12-Hour lookback to capture live, halftime, and late-stage matches
     lookback_time = current_time_utc - datetime.timedelta(hours=12)
-    # 36-Hour lookahead to capture wide tournament schedules in advance
     lookahead_window = current_time_utc + datetime.timedelta(hours=36)
     commence_from_str = lookback_time.strftime("%Y-%m-%dT%H:%M:%SZ")
     
@@ -227,7 +224,7 @@ def execute_global_pitch_sweeps():
     for sport_item in MASTER_BOOKIE_CATALOG:
         league_key = sport_item["key"]
         league_title = sport_item["title"]
-        url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
+        url = f"https://the-odds-api.com{league_key}/odds"
         params = {
             "apiKey": LIVE_DATA_API_KEY, 
             "regions": "us,eu", 
@@ -236,86 +233,90 @@ def execute_global_pitch_sweeps():
             "commenceTimeFrom": commence_from_str
         }
         
+        match_data = []
         try:
             time.sleep(1.0)
             res = requests.get(url, params=params, timeout=12)
-            if res.status_code != 200:
+            if res.status_code == 200:
+                match_data = res.json()
+        except Exception as e:
+            print(f"[-] API connection timed out for {league_title}: {e}")
+            continue
+            
+        if not match_data or not isinstance(match_data, list):
+            continue
+            
+        leagues_with_data += 1
+        for fixture in match_data:
+            total_matches_found += 1
+            commence_time_str = fixture.get("commence_time")
+            if not commence_time_str:
                 continue
-            match_data = res.json()
-            if not isinstance(match_data, list):
+            commence_dt = datetime.datetime.strptime(commence_time_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
+            if commence_dt > lookahead_window:
                 continue
-            if match_data:
-                leagues_with_data += 1
-                
-            for fixture in match_data:
-                total_matches_found += 1
-                commence_time_str = fixture.get("commence_time")
-                if not commence_time_str:
-                    continue
-                commence_dt = datetime.datetime.strptime(commence_time_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
-                if commence_dt > lookahead_window:
-                    continue
-                home, away = fixture.get("home_team"), fixture.get("away_team")
-                
-                target_bookmaker = None
-                bookmakers_list = fixture.get("bookmakers", [])
-                if bookmakers_list and isinstance(bookmakers_list, list):
-                    for bm in bookmakers_list:
-                        if isinstance(bm, dict) and bm.get("title") in ["Bet365", "DraftKings", "FanDuel", "Bovada"]:
-                            target_bookmaker = bm
-                            break
-                    if not target_bookmaker and len(bookmakers_list) > 0:
-                        target_bookmaker = bookmakers_list[0]
-                        
-                if not target_bookmaker or not isinstance(target_bookmaker, dict):
-                    continue
-                
-                h2h_odds = parse_market_odds(target_bookmaker, "h2h")
-                home_odds_val = h2h_odds.get(home, 100)
-                away_odds_val = h2h_odds.get(away, 100)
-                draw_odds_val = h2h_odds.get("Draw", 100)
-                
-                try:
-                    h_int = int(home_odds_val)
-                    if h_int < -110: all_discovered_favorites.append({"team": home, "odds": h_int, "match": f"{home} vs {away}", "league": league_title})
-                except ValueError: pass
-                try:
-                    a_int = int(away_odds_val)
-                    if a_int < -110: all_discovered_favorites.append({"team": away, "odds": a_int, "match": f"{home} vs {away}", "league": league_title})
-                except ValueError: pass
+            home, away = fixture.get("home_team"), fixture.get("away_team")
+            
+            target_bookmaker = None
+            bookmakers_list = fixture.get("bookmakers", [])
+            if bookmakers_list and isinstance(bookmakers_list, list):
+                for bm in bookmakers_list:
+                    if isinstance(bm, dict) and bm.get("title") in ["Bet365", "DraftKings", "FanDuel", "Bovada"]:
+                        target_bookmaker = bm
+                        break
+                if not target_bookmaker and len(bookmakers_list) > 0:
+                    target_bookmaker = bookmakers_list[0]
+                    
+            if not target_bookmaker or not isinstance(target_bookmaker, dict):
+                continue
+            
+            h2h_odds = parse_market_odds(target_bookmaker, "h2h")
+            home_odds_val = h2h_odds.get(home, 100)
+            away_odds_val = h2h_odds.get(away, 100)
+            draw_odds_val = h2h_odds.get("Draw", 100)
+            
+            try:
+                h_int = int(home_odds_val)
+                if h_int < -110: all_discovered_favorites.append({"team": home, "odds": h_int, "match": f"{home} vs {away}", "league": league_title})
+            except ValueError: pass
+            try:
+                a_int = int(away_odds_val)
+                if a_int < -110: all_discovered_favorites.append({"team": away, "odds": a_int, "match": f"{home} vs {away}", "league": league_title})
+            except ValueError: pass
 
-                implied_p = convert_american_to_implied(home_odds_val)
-                true_p = implied_p + 0.06
-                edge_val = true_p - implied_p
-                is_live = commence_dt <= current_time_utc
-                
-                try:
-                    h_odds_int = int(home_odds_val)
-                    if -300 <= h_odds_int <= -175 and not is_live:
-                        juice_alert = (
-                            f"🏎️ **CORVETTE FUND BLUEPRINT — SYSTEM 2 JUICE OVERRIDE**\n\n"
-                            f"**Match Context:** {home} vs {away} ({league_title})\n"
-                            f"📈 **Pre-Match Line Alert:** Heavy Favorite ML Juice detected at ({home_odds_val})\n"
-                            f"🎯 **Operational Mandate:** Bypass direct standard line. Execute Time-Bracket strategy entry: **Goal Before 30:00** or **Favorite to Lead Before 30:00** to secure optimal execution value."
+            implied_p = convert_american_to_implied(home_odds_val)
+            true_p = implied_p + 0.06
+            edge_val = true_p - implied_p
+            is_live = commence_dt <= current_time_utc
+            
+            try:
+                h_odds_int = int(home_odds_val)
+                if -300 <= h_odds_int <= -175 and not is_live:
+                    juice_alert = (
+                        f"🏎️ **CORVETTE FUND BLUEPRINT — SYSTEM 2 JUICE OVERRIDE**\n\n"
+                        f"**Match Context:** {home} vs {away} ({league_title})\n"
+                        f"📈 **Pre-Match Line Alert:** Heavy Favorite ML Juice detected at ({home_odds_val})\n"
+                        f"🎯 **Operational Mandate:** Bypass direct standard line. Execute Time-Bracket strategy entry: **Goal Before 30:00** or **Favorite to Lead Before 30:00** to secure optimal execution value."
+                    )
+                    send_discord_payload(juice_alert)
+            except ValueError: pass
+
+            if is_live:
+                live_data = get_live_pitch_telemetry(home, away)
+                if live_data.get("active"):
+                    current_minute = live_data.get("minute", 0)
+                    current_score = live_data.get("score", "0-0")
+                    if 12 <= current_minute <= 18 and current_score == "0-0":
+                        interval_alert = (
+                            f"🏎️ **CORVETTE FUND BLUEPRINT — LIVE STRATEGY SIGNAL**\n\n"
+                            f"* **The Play Target:** 1st-Half Over 0.5 Goals entry window active for **{home} vs {away}**\n"
+                            f"* **The Value Discrepancy Math:** Implied Chance {implied_p:.1%} vs Evaluated Live Metric Pressure Corridor.\n"
+                            f"* **Why the data holds the edge:** Game clock verified at {live_data.get('clock')} mark sitting at balanced scoreline ({current_score}). Live attack velocity registers {live_data.get('dang_attacks_home')} Dangerous Attacks. True capability calibration identifies highly optimized value entry on discounted first-half totals."
                         )
-                        send_discord_payload(juice_alert)
-                except ValueError: pass
-
-                if is_live:
-                    live_data = get_live_pitch_telemetry(home, away)
-                    if live_data.get("active"):
-                        current_minute = live_data.get("minute", 0)
-                        current_score = live_data.get("score", "0-0")
-                        if 12 <= current_minute <= 18 and current_score == "0-0":
-                            interval_alert = (
-                                f"🏎️ **CORVETTE FUND BLUEPRINT — LIVE STRATEGY SIGNAL**\n\n"
-                                f"* **The Play Target:** 1st-Half Over 0.5 Goals entry window active for **{home} vs {away}**\n"
-                                f"* **The Value Discrepancy Math:** Implied Chance {implied_p:.1%} vs Evaluated Live Metric Pressure Corridor.\n"
-                                f"* **Why the data holds the edge:** Game clock verified at {live_data.get('clock')} mark sitting at balanced scoreline ({current_score}). Live attack velocity registers {live_data.get('dang_attacks_home')} Dangerous Attacks. True capability calibration identifies highly optimized value entry on discounted first-half totals."
-                            )
-                            send_discord_payload(interval_alert)
-                            continue
-                if edge_val >= 0.00:
+                        send_discord_payload(interval_alert)
+                        continue
+            if edge_val >= 0.00:
+                try:
                     system_5_details = get_league_standings_and_audit(league_title, home, away)
                     fmt_h = f"+{home_odds_val}" if int(home_odds_val) > 0 else home_odds_val
                     fmt_d = f"+{draw_odds_val}" if int(draw_odds_val) > 0 else draw_odds_val
@@ -333,8 +334,8 @@ def execute_global_pitch_sweeps():
                         f"* **Live Threat Matrix Edge:** System processing models identify high strategic edge alignment based on historical prominence indices. Pipeline validation models confirm active tactical performance profiles across current match context sheets."
                     )
                     send_discord_payload(full_alert)
-        except Exception as api_err:
-            print(f"[-] Inner data processing block error: {api_err}")
+                except Exception as inner_err:
+                    print(f"[-] Evaluation display error: {inner_err}")
 
     print(f"[+] Sweep Status: Checked 48 leagues. Found {leagues_with_data} leagues with active boards. Total matches evaluated: {total_matches_found}")
 
