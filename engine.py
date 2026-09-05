@@ -301,10 +301,21 @@ def execute_global_pitch_sweeps():
         send_discord_payload(board_msg)
     else:
         print("[-] Top 20 generation: No eligible favorites under -110 found in this window.")
-
 if __name__ == "__main__":
     while True:
         execute_global_pitch_sweeps()
+        
+        # Immediate active pipeline diagnostic validation
+        test_payload = (
+            f"🏎️ **CORVETTE FUND ENGINE — STATUS VERIFIED**\n\n"
+            f"📡 **Operational Status:** Active Loop Online\n"
+            f"🔄 **Interval State:** 10-Minute Sweep Completed Cleanly\n"
+            f"💻 **Server Core:** Render Node Live"
+        )
+        send_discord_payload(test_payload)
+        
         print("[+] Sweep complete. Entering 10-minute rest buffer...")
         time.sleep(600)
+
+
 
