@@ -120,7 +120,7 @@ def monitor_live_pitches():
                 dt = datetime.datetime.strptime(commence_time_str, "%Y-%m-%dT%H:%M:%SZ")
                 match_ts = dt.replace(tzinfo=datetime.timezone.utc).timestamp()
                 
-                if match_ts > max_ts or match_ts < (now_ts - 10800): continue
+                if match_ts > max_ts: continue
                 
                 home, away = fix.get("home_team"), fix.get("away_team")
                 
