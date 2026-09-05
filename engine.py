@@ -8,6 +8,10 @@ if not DISCORD_WEBHOOK_URL or not LIVE_DATA_API_KEY or not API_FOOTBALL_KEY:
     print("Critical secure tokens missing."); sys.exit(1)
 
 MASTER_BOOKIE_CATALOG = [
+    {"key": "soccer_mexico_liga_expansion", "title": "Mexico Liga de Expansion"},
+    {"key": "soccer_mexico_mx_femenil", "title": "Mexico Liga MX Femenil"},
+    {"key": "soccer_usa_nwsl", "title": "USA NWSL Women"},
+    {"key": "soccer_panama_lpf", "title": "Panama LPF"},
     {"key": "soccer_usa_mls", "title": "USA MLS"},
     {"key": "soccer_usa_usl_championship", "title": "USA USL Championship"},
     {"key": "soccer_chile_campeonato", "title": "Chile Liga de Primera"},
