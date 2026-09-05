@@ -20,8 +20,8 @@ if not DISCORD_WEBHOOK_URL or not LIVE_DATA_API_KEY or not API_FOOTBALL_KEY:
 # =====================================================================
 MASTER_BOOKIE_CATALOG = [
     {"key": "soccer_uefa_nations_league", "title": "UEFA Nations League"},
-    {"key": "soccer_fifa_world_cup_qualifiers_europe", "title": "FIFA World Cup Qualifiers - Europe"},
-    {"key": "soccer_international_matches", "title": "International Friendlies"},
+    {"key": "soccer_intl_wcup_qual_europe", "title": "FIFA World Cup Qualifiers - Europe"},
+    {"key": "soccer_international_friendly", "title": "International Friendlies"},
     {"key": "soccer_usa_mls", "title": "USA MLS"},
     {"key": "soccer_usa_usl_championship", "title": "USA USL Championship"},
     {"key": "soccer_chile_campeonato", "title": "Chile Liga de Primera"},
@@ -71,6 +71,7 @@ MASTER_BOOKIE_CATALOG = [
     {"key": "soccer_saudi_arabia_pro_league", "title": "Saudi Arabia Pro League"},
     {"key": "soccer_australia_aleague", "title": "Australia A-League"}
 ]
+
 # =====================================================================
 # TRANSMISSION INTERFACE & UTILITIES
 # =====================================================================
