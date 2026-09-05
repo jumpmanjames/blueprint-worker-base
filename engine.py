@@ -236,8 +236,11 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
 def execute_global_pitch_sweeps():
     print("[+] Ingestion engine active. Executing full global sweep...")
     current_time_utc = datetime.datetime.now(datetime.timezone.utc)
+    
+    # SYSTEM OVERRIDE: 12-Hour lookback to capture live, halftime, and late-stage matches
     lookback_time = current_time_utc - datetime.timedelta(hours=12)
-    lookahead_window = current_time_utc + datetime.timedelta(days=1)
+    # 36-Hour lookahead to capture wide tournament schedules in advance
+    lookahead_window = current_time_utc + datetime.timedelta(hours=36)
     commence_from_str = lookback_time.strftime("%Y-%m-%dT%H:%M:%SZ")
     
     all_discovered_favorites = []
@@ -247,7 +250,7 @@ def execute_global_pitch_sweeps():
     for sport_item in MASTER_BOOKIE_CATALOG:
         league_key = sport_item["key"]
         league_title = sport_item["title"]
-        url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
+        url = f"https://the-odds-api.com{league_key}/odds"
         params = {
             "apiKey": LIVE_DATA_API_KEY, 
             "regions": "us,eu", 
@@ -262,12 +265,16 @@ def execute_global_pitch_sweeps():
             if res.status_code != 200:
                 continue
             match_data = res.json()
+            if not isinstance(match_data, list):
+                continue
             if match_data:
                 leagues_with_data += 1
                 
             for fixture in match_data:
                 total_matches_found += 1
                 commence_time_str = fixture.get("commence_time")
+                if not commence_time_str:
+                    continue
                 commence_dt = datetime.datetime.strptime(commence_time_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
                 if commence_dt > lookahead_window:
                     continue
@@ -275,15 +282,15 @@ def execute_global_pitch_sweeps():
                 
                 target_bookmaker = None
                 bookmakers_list = fixture.get("bookmakers", [])
-                if bookmakers_list:
+                if bookmakers_list and isinstance(bookmakers_list, list):
                     for bm in bookmakers_list:
-                        if bm.get("title") in ["Bet365", "DraftKings", "FanDuel", "Bovada"]:
+                        if isinstance(bm, dict) and bm.get("title") in ["Bet365", "DraftKings", "FanDuel", "Bovada"]:
                             target_bookmaker = bm
                             break
-                        if not target_bookmaker and len(bookmakers_list) > 0:
-                            target_bookmaker = bookmakers_list[0]
-      
-                if not target_bookmaker:
+                    if not target_bookmaker and len(bookmakers_list) > 0:
+                        target_bookmaker = bookmakers_list[0]
+                        
+                if not target_bookmaker or not isinstance(target_bookmaker, dict):
                     continue
                 
                 h2h_odds = parse_market_odds(target_bookmaker, "h2h")
@@ -293,16 +300,12 @@ def execute_global_pitch_sweeps():
                 
                 try:
                     h_int = int(home_odds_val)
-                    if h_int < -110:
-                        all_discovered_favorites.append({"team": home, "odds": h_int, "match": f"{home} vs {away}", "league": league_title})
-                except ValueError:
-                    pass
+                    if h_int < -110: all_discovered_favorites.append({"team": home, "odds": h_int, "match": f"{home} vs {away}", "league": league_title})
+                except ValueError: pass
                 try:
                     a_int = int(away_odds_val)
-                    if a_int < -110:
-                        all_discovered_favorites.append({"team": away, "odds": a_int, "match": f"{home} vs {away}", "league": league_title})
-                except ValueError:
-                    pass
+                    if a_int < -110: all_discovered_favorites.append({"team": away, "odds": a_int, "match": f"{home} vs {away}", "league": league_title})
+                except ValueError: pass
 
                 implied_p = convert_american_to_implied(home_odds_val)
                 true_p = implied_p + 0.06
@@ -319,8 +322,7 @@ def execute_global_pitch_sweeps():
                             f"🎯 **Operational Mandate:** Bypass direct standard line. Execute Time-Bracket strategy entry: **Goal Before 30:00** or **Favorite to Lead Before 30:00** to secure optimal execution value."
                         )
                         send_discord_payload(juice_alert)
-                except ValueError:
-                    pass
+                except ValueError: pass
 
                 if is_live:
                     live_data = get_live_pitch_telemetry(home, away)
@@ -336,7 +338,6 @@ def execute_global_pitch_sweeps():
                             )
                             send_discord_payload(interval_alert)
                             continue
-
                 if edge_val >= 0.00:
                     system_5_details = get_league_standings_and_audit(league_title, home, away)
                     fmt_h = f"+{home_odds_val}" if int(home_odds_val) > 0 else home_odds_val
@@ -356,7 +357,7 @@ def execute_global_pitch_sweeps():
                     )
                     send_discord_payload(full_alert)
         except Exception as api_err:
-            print(f"[-] Buffer delay parsing league data stream: {api_err}")
+            print(f"[-] Inner data processing block error: {api_err}")
 
     print(f"[+] Sweep Status: Checked 48 leagues. Found {leagues_with_data} leagues with active boards. Total matches evaluated: {total_matches_found}")
 
@@ -368,13 +369,12 @@ def execute_global_pitch_sweeps():
         send_discord_payload(board_msg)
     else:
         print("[-] Top 20 generation: No eligible favorites under -110 found in this window.")
+
 if __name__ == "__main__":
-    # Keeps track of when the last 4-hour ledger summary was dispatched
     last_ledger_dump_time = time.time()
     
     while True:
         execute_global_pitch_sweeps()
-        
         utc_now = datetime.datetime.now(datetime.timezone.utc)
         central_hour = (utc_now.hour - 5) % 24 
         
@@ -386,27 +386,18 @@ if __name__ == "__main__":
         )
         send_discord_payload(test_payload)
         
-        # =====================================================================
-        # AUTOMATED 4-HOUR LEDGER MONITOR SUMMARY DISPATCH
-        # =====================================================================
         current_loop_time = time.time()
-        # 14400 seconds equals exactly 4 full hours
         if current_loop_time - last_ledger_dump_time >= 14400:
             ledger_file = "bet_ledger.csv"
             total_logged_entries = 0
             recent_rows_summary = ""
-            
             if os.path.isfile(ledger_file):
                 try:
                     with open(ledger_file, mode="r", encoding="utf-8") as f:
                         lines = f.readlines()
-                        # Deduct 1 to account for the header row block
                         total_logged_entries = max(0, len(lines) - 1)
-                        
-                        # Grab up to the last 5 active records to display clean scannability
                         latest_records = lines[-5:] if total_logged_entries > 0 else []
                         for idx, row in enumerate(latest_records, 1):
-                            # Basic formatting layout to display items cleanly on mobile screens
                             clean_row = row.replace('"', '').strip()
                             recent_rows_summary += f"🔹 {clean_row}\n"
                 except Exception as file_err:
@@ -420,20 +411,9 @@ if __name__ == "__main__":
                 f"{recent_rows_summary if recent_rows_summary else 'No target signals recorded in this window.'}"
             )
             send_discord_payload(summary_banner)
-            
-            # Reset the timer checkpoint array loop
             last_ledger_dump_time = current_loop_time
-            print("[+] 4-Hour ledger summary successfully compiled and sent to Discord.")
         
-        # SYSTEM HYBRID OVERRIDE DEAD-ZONE THROTTLE [11 PM to 3 AM Central]
         if central_hour >= 23 or central_hour < 3:
-            print(f"[!] System entering late-night dead zone ({central_hour}:00 CT). Sleeping for 1 hour to conserve API tokens...")
             time.sleep(3600)
         else:
-            print(f"[+] System active in prime operational window ({central_hour}:00 CT). Entering standard 10-minute rest buffer...")
             time.sleep(600)
-
-
-
-
-
