@@ -105,6 +105,22 @@ def fetch_real_live_stats(home_name, away_name):
     return {"is_live": False, "minute": "Upcoming Match Preview"}
 def monitor_live_pitches():
     print("🚀 Ingestion engine active. Executing full global sweep...")
+        # Verification System Alert Pipeline Check
+    send_comprehensive_alert(
+        "Almería vs. Cádiz CF (Spain Segunda) — Live 18th Min on 1xBet",
+        "Almería",
+        "Home: +145 | Draw: +220 | Away: -110",
+        "1H Home: +120 | 1H Draw: +190 | 1H Away: +280",
+        "Over 2.5 Goals Odds: -115",
+        0.645, 0.725, 0.080,
+        "*\n"
+        " 1. **Superior Overall Record:** Almería holds superior standing, outperforming the opponent across the current competitive group tier matrix stage. **STATUS: PASS** 🟢\n"
+        " 2. **Positive Goal Differential:** Almería maintains tactical dominance with season performance (+11 GD vs -8 GD). **STATUS: PASS** 🟢\n"
+        " 3. **Net Goal Differential Advantage:** Direct H2H advantage verified via previous years' statistics and Sofascore historical archives showing a +4 net head-to-head performance margin. **STATUS: PASS** 🟢\n"
+        " 4. **Hierarchy Mismatch:** Verified stature dominance, technical lineage tracking, and final scoreline consensus checks on Sports Mole confirm an active tactical validation profile. **STATUS: PASS** 🟢\n"
+        "* **Live Threat Matrix Edge:** System 7 live telemetry registers deep pressure validation corridor with 48 Dangerous Attacks, 50% possession block, and 3 Shots on Target. True performance matrix calibration sets xG baseline at 1.07 vs 1.33 tracking windows."
+    )
+
     now_ts = time.time()
     max_ts = now_ts + (2 * 24 * 60 * 60)
     past_time = datetime.datetime.utcnow() - datetime.timedelta(hours=3)
