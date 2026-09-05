@@ -71,7 +71,6 @@ MASTER_BOOKIE_CATALOG = [
     {"key": "soccer_saudi_arabia_pro_league", "title": "Saudi Arabia Pro League"},
     {"key": "soccer_australia_aleague", "title": "Australia A-League"}
 ]
-
 # =====================================================================
 # TRANSMISSION INTERFACE & UTILITIES
 # =====================================================================
@@ -121,7 +120,7 @@ def parse_market_odds(bookmaker_data, market_key="h2h"):
     return odds_map
 
 def get_live_pitch_telemetry(home_team, away_team):
-    url = "https://v3.football.api-sports.io/fixtures"
+    url = "https://api-sports.io"
     headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
     params = {"live": "all"}
     try:
@@ -154,9 +153,8 @@ def get_live_pitch_telemetry(home_team, away_team):
                     }
     except Exception as e: print(f"[-] Telemetry error: {e}")
     return {"active": False, "minute": 0, "score": "0-0", "dang_attacks_home": 0}
-
 def get_league_standings_and_audit(league_title, home_team, away_team):
-    url = "https://v3.football.api-sports.io/standings"
+    url = "https://api-sports.io"
     headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
     h_gd_str, a_gd_str = "+0 GD", "+0 GD"
     current_year = datetime.datetime.now().year
@@ -166,29 +164,29 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
         if res.status_code == 200:
             records = res.json().get("response", [])
             if records and isinstance(records, list):
-                league_obj = records.get("league", {}) if isinstance(records, dict) else {}
-                standings_lists = league_obj.get("standings", [])
-                if standings_lists and isinstance(standings_lists, list) and len(standings_lists) > 0:
-                    for team_entry in standings_lists:
-                        t_name = team_entry.get("team", {}).get("name", "").lower()
-                        if home_team.lower()[:5] in t_name or t_name[:5] in home_team.lower():
-                            gd = team_entry.get("goalsDiff", 0)
-                            h_gd_str = f"+{gd} GD" if gd > 0 else f"{gd} GD"
-                            break
+                if len(records) > 0:
+                    standings_lists = records.get("league", {}).get("standings", [])
+                    if standings_lists and isinstance(standings_lists, list) and len(standings_lists) > 0:
+                        for team_entry in standings_lists:
+                            t_name = team_entry.get("team", {}).get("name", "").lower()
+                            if home_team.lower()[:5] in t_name or t_name[:5] in home_team.lower():
+                                gd = team_entry.get("goalsDiff", 0)
+                                h_gd_str = f"+{gd} GD" if gd > 0 else f"{gd} GD"
+                                break
                             
         res_away = requests.get(url, headers=headers, params={"search": away_team, "season": current_year}, timeout=8)
         if res_away.status_code == 200:
             records_a = res_away.json().get("response", [])
             if records_a and isinstance(records_a, list):
-                league_obj_a = records_a.get("league", {}) if isinstance(records_a, dict) else {}
-                standings_lists_a = league_obj_a.get("standings", [])
-                if standings_lists_a and isinstance(standings_lists_a, list) and len(standings_lists_a) > 0:
-                    for team_entry in standings_lists_a:
-                        t_name = team_entry.get("team", {}).get("name", "").lower()
-                        if away_team.lower()[:5] in t_name or t_name[:5] in away_team.lower():
-                            gd = team_entry.get("goalsDiff", 0)
-                            a_gd_str = f"+{gd} GD" if gd > 0 else f"{gd} GD"
-                            break
+                if len(records_a) > 0:
+                    standings_lists_a = records_a.get("league", {}).get("standings", [])
+                    if standings_lists_a and isinstance(standings_lists_a, list) and len(standings_lists_a) > 0:
+                        for team_entry in standings_lists_a:
+                            t_name = team_entry.get("team", {}).get("name", "").lower()
+                            if away_team.lower()[:5] in t_name or t_name[:5] in away_team.lower():
+                                gd = team_entry.get("goalsDiff", 0)
+                                a_gd_str = f"+{gd} GD" if gd > 0 else f"{gd} GD"
+                                break
     except Exception as e: print(f"[-] Standing delay: {e}")
 
     return (
@@ -201,14 +199,10 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
         f"4. **Hierarchy Mismatch:** Sports Mole final score consensus matches historical caliber patterns.\n"
         f"   **STATUS: PASS** \U0001F7E2"
     )
-
-# =====================================================================
-# CORE OPERATIONS RUNTIME LOOP
-# =====================================================================
 def execute_global_pitch_sweeps():
     print("[+] Ingestion engine active. Executing full global sweep...")
     current_time_utc = datetime.datetime.now(datetime.timezone.utc)
-    lookback_time = current_time_utc - datetime.timedelta(hours=2)
+    lookback_time = current_time_utc - datetime.timedelta(hours=12)
     lookahead_window = current_time_utc + datetime.timedelta(hours=24)
     commence_from_str = lookback_time.strftime("%Y-%m-%dT%H:%M:%SZ")
     
@@ -222,7 +216,7 @@ def execute_global_pitch_sweeps():
         url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
         params = {
             "apiKey": LIVE_DATA_API_KEY, 
-            "regions": "us,eu", 
+            "regions": "us", 
             "markets": "h2h,totals", 
             "oddsFormat": "american",
             "commenceTimeFrom": commence_from_str
@@ -280,8 +274,6 @@ def execute_global_pitch_sweeps():
             except ValueError: pass
 
             implied_p = convert_american_to_implied(home_odds_val)
-            true_p = implied_p 
-            edge_val = 0.05 
             is_live = commence_dt <= current_time_utc
             
             try:
@@ -345,49 +337,6 @@ def execute_global_pitch_sweeps():
         print("[-] Top 20 generation: No eligible favorites under -110 found in this window.")
 
 if __name__ == "__main__":
-    last_ledger_dump_time = time.time()
-    
     while True:
         execute_global_pitch_sweeps()
-        utc_now = datetime.datetime.now(datetime.timezone.utc)
-        central_hour = (utc_now.hour - 5) % 24 
-        
-        test_payload = (
-            f"\U0001F3CE **CORVETTE FUND ENGINE \u2014 STATUS VERIFIED**\n\n"
-            f"\U0001F4E1 **Operational Status:** Active Loop Online\n"
-            f"\U0001F4C3 **Interval State:** Sweep Completed Cleanly\n"
-            f"\U0001F4BB **Server Core:** Render Node Live"
-        )
-        send_discord_payload(test_payload)
-        
-        current_loop_time = time.time()
-        if current_loop_time - last_ledger_dump_time >= 14400:
-            ledger_file = "bet_ledger.csv"
-            total_logged_entries = 0
-            recent_rows_summary = ""
-            if os.path.isfile(ledger_file):
-                try:
-                    with open(ledger_file, mode="r", encoding="utf-8") as f:
-                        lines = f.readlines()
-                        total_logged_entries = max(0, len(lines) - 1)
-                        latest_records = lines[-5:] if total_logged_entries > 0 else []
-                        for idx, row in enumerate(latest_records, 1):
-                            clean_row = row.replace('"', '').strip()
-                            recent_rows_summary += f"\U0001F539 {clean_row}\n"
-                except Exception as file_err:
-                    print(f"[-] Ledger summary parsing exception: {file_err}")
-            
-            summary_banner = (
-                f"\U0001F680 **CORVETTE FUND ENGINE \u2014 4-HOUR PERFORMANCE SUMMARY**\n\n"
-                f"\U0001F4CA **Total Archived Records:** {total_logged_entries} Fired Signals\n"
-                f"\U0001F4C8 **Active System Health:** 100% Operational\n\n"
-                f"\U0001F4CB **Most Recent Ledger Entries:**\n"
-                f"{recent_rows_summary if recent_rows_summary else 'No target signals recorded in this window.'}"
-            )
-            send_discord_payload(summary_banner)
-            last_ledger_dump_time = current_loop_time
-        
-        if central_hour >= 23 or central_hour < 3:
-            time.sleep(3600)
-        else:
-            time.sleep(600)
+        time.sleep(600)
