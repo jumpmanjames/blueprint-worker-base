@@ -73,12 +73,40 @@ MASTER_BOOKIE_CATALOG = [
 # =====================================================================
 def send_discord_payload(content_str):
     try:
+        # Standard dispatch execution layer
         requests.post(
             DISCORD_WEBHOOK_URL,
             json={"content": content_str},
             headers={"Content-Type": "application/json"},
             timeout=10
         )
+        
+        # =====================================================================
+        # AUTOMATED SYSTEM BETTING LEDGER LOGGING
+        # =====================================================================
+        ledger_file = "bet_ledger.csv"
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Check if the file exists to write column headers on initialization
+        file_exists = os.path.isfile(ledger_file)
+        
+        # Simple text cleaning to safely package details inside a CSV layout
+        clean_title = content_str.split("\n")[0].replace("🏎️", "").strip()
+        context_line = "General Signal Logs"
+        for line in content_str.split("\n"):
+            if "Match Context:" in line:
+                context_line = line.replace("**Match Context:**", "").strip()
+                break
+                
+        with open(ledger_file, mode="a", encoding="utf-8") as f:
+            if not file_exists:
+                f.write("Timestamp,Signal_Type,Match_Context,Settlement_Status\n")
+            f.write(f'"{timestamp}","{clean_title}","{context_line}","PENDING_LIVE_AUDIT"\n')
+            
+        print(f"[+] Signal logged successfully inside system ledger sheet ({ledger_file})")
+    except Exception as e:
+        print(f"[-] Ledger interface tracking failure: {e}")
+
     except Exception as e:
         print(f"[-] Discord dispatch fault: {e}")
 
