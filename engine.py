@@ -337,7 +337,7 @@ def execute_global_pitch_sweeps():
                             send_discord_payload(interval_alert)
                             continue
 
-                if edge_val >= 0.05:
+                if edge_val >= 0.00:
                     system_5_details = get_league_standings_and_audit(league_title, home, away)
                     fmt_h = f"+{home_odds_val}" if int(home_odds_val) > 0 else home_odds_val
                     fmt_d = f"+{draw_odds_val}" if int(draw_odds_val) > 0 else draw_odds_val
