@@ -206,15 +206,11 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
         f"   **STATUS: PASS** \U0001F7E2"
     )
 
-def is_eligible_favorite(odds_val):
-    """Helper method to filter favorites across American odds spanning from -100000 to +300."""
+def is_any_valid_market_selection(odds_val):
+    """Infinite parameters trap: Verifies integer data conversion to parse any active live odds board entry."""
     try:
-        val = int(odds_val)
-        if val <= -110 and val >= -100000:
-            return True
-        if 100 <= val <= 300:
-            return True
-        return False
+        _ = int(odds_val)
+        return True
     except ValueError:
         return False
 def execute_global_pitch_sweeps():
@@ -282,26 +278,24 @@ def execute_global_pitch_sweeps():
             away_odds_val = h2h_odds.get(away, 100)
             draw_odds_val = h2h_odds.get("Draw", 100)
             
-            if is_eligible_favorite(home_odds_val):
+            if is_any_valid_market_selection(home_odds_val):
                 all_discovered_favorites.append({"team": home, "odds": int(home_odds_val), "match": f"{home} vs {away}", "league": league_title})
             
-            if is_eligible_favorite(away_odds_val):
+            if is_any_valid_market_selection(away_odds_val):
                 all_discovered_favorites.append({"team": away, "odds": int(away_odds_val), "match": f"{home} vs {away}", "league": league_title})
 
             implied_p = convert_american_to_implied(home_odds_val)
             is_live = commence_dt <= current_time_utc
             
-            try:
-                h_odds_int = int(home_odds_val)
-                if -100000 <= h_odds_int <= -175 and not is_live:
-                    juice_alert = (
-                        f"\U0001F3CE **CORVETTE FUND BLUEPRINT \u2014 SYSTEM 2 JUICE OVERRIDE**\n\n"
-                        f"**Match Context:** {home} vs {away} ({league_title})\n"
-                        f"\U0001F4C8 **Pre-Match Line Alert:** Heavy Favorite ML Juice detected at ({home_odds_val})\n"
-                        f"\U0001F3AF **Operational Mandate:** Bypass direct standard line. Execute Time-Bracket strategy entry: **Goal Before 30:00** or **Favorite to Lead Before 30:00**."
-                    )
-                    send_discord_payload(juice_alert)
-            except ValueError: pass
+            # Blueprint System 2 Juice Engine tracks all valid prices now
+            if is_any_valid_market_selection(home_odds_val) and not is_live:
+                juice_alert = (
+                    f"\U0001F3CE **CORVETTE FUND BLUEPRINT \u2014 SYSTEM 2 JUICE OVERRIDE**\n\n"
+                    f"**Match Context:** {home} vs {away} ({league_title})\n"
+                    f"\U0001F4C8 **Pre-Match Line Alert:** Heavy Favorite ML Juice detected at ({home_odds_val})\n"
+                    f"\U0001F3AF **Operational Mandate:** Bypass direct standard line. Execute Time-Bracket strategy entry: **Goal Before 30:00** or **Favorite to Lead Before 30:00**."
+                )
+                send_discord_payload(juice_alert)
 
             if is_live:
                 live_data = get_live_pitch_telemetry(home, away)
