@@ -163,15 +163,14 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
 # =====================================================================
 # CORE OPERATIONS RUNTIME LOOP
 # =====================================================================
+# =====================================================================
+# CORE OPERATIONS RUNTIME LOOP
+# =====================================================================
 def execute_global_pitch_sweeps():
     print("[+] Ingestion engine active. Executing full global sweep...")
-        current_time_utc = datetime.datetime.now(datetime.timezone.utc)
-    
-    # Restores your lookback array window parameter tracking
+    current_time_utc = datetime.datetime.now(datetime.timezone.utc)
     lookback_time = current_time_utc - datetime.timedelta(hours=2)
     lookahead_window = current_time_utc + datetime.timedelta(days=1)
-    
-    # Formats the time into the exact format The Odds API requires
     commence_from_str = lookback_time.strftime("%Y-%m-%dT%H:%M:%SZ")
     
     all_discovered_favorites = []
@@ -182,8 +181,6 @@ def execute_global_pitch_sweeps():
         league_key = sport_item["key"]
         league_title = sport_item["title"]
         url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
-        
-        # Injects the dynamic time query to catch running and upcoming games
         params = {
             "apiKey": LIVE_DATA_API_KEY, 
             "regions": "us,eu", 
@@ -191,16 +188,6 @@ def execute_global_pitch_sweeps():
             "oddsFormat": "american",
             "commenceTimeFrom": commence_from_str
         }
-
-    all_discovered_favorites = []
-    leagues_with_data = 0
-    total_matches_found = 0
-    
-    for sport_item in MASTER_BOOKIE_CATALOG:
-        league_key = sport_item["key"]
-        league_title = sport_item["title"]
-        url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
-        params = {"apiKey": LIVE_DATA_API_KEY, "regions": "us,eu", "markets": "h2h,totals", "oddsFormat": "american"}
         
         try:
             time.sleep(1.0)
@@ -320,3 +307,4 @@ if __name__ == "__main__":
         execute_global_pitch_sweeps()
         print("[+] Sweep complete. Entering 10-minute rest buffer...")
         time.sleep(600)
+
