@@ -10,8 +10,8 @@ if not DISCORD_WEBHOOK_URL or not LIVE_DATA_API_KEY or not API_FOOTBALL_KEY:
 MASTER_BOOKIE_CATALOG = [
     {"key": "soccer_usa_mls", "title": "USA MLS"},
     {"key": "soccer_usa_usl_championship", "title": "USA USL Championship"},
-    {"key": "soccer_chile_cl", "title": "Chile Liga de Primera"},
-    {"key": "soccer_ecuador_ec", "title": "Ecuador LigaPro Serie A"},
+    {"key": "soccer_chile_campeonato", "title": "Chile Liga de Primera"},
+    {"key": "soccer_ecuador_serie_a", "title": "Ecuador LigaPro Serie A"},
     {"key": "soccer_epl", "title": "England Premier League"},
     {"key": "soccer_england_championship", "title": "England Championship"},
     {"key": "soccer_england_league1", "title": "England League 1"},
