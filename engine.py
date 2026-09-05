@@ -169,7 +169,7 @@ def get_league_standings_and_audit(league_title, home_team, away_team):
 def execute_global_pitch_sweeps():
     print("[+] Ingestion engine active. Executing full global sweep...")
     current_time_utc = datetime.datetime.now(datetime.timezone.utc)
-    lookback_time = current_time_utc - datetime.timedelta(hours=2)
+    lookback_time = current_time_utc - datetime.timedelta(hours=12)
     lookahead_window = current_time_utc + datetime.timedelta(days=1)
     commence_from_str = lookback_time.strftime("%Y-%m-%dT%H:%M:%SZ")
     
