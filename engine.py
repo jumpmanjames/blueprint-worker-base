@@ -106,7 +106,7 @@ def monitor_live_pitches():
     
     for league in MASTER_BOOKIE_CATALOG:
         league_key = league["key"]
-        params = {"apiKey": LIVE_DATA_API_KEY, "regions": "us,eu", "markets": "h2h,totals", "oddsFormat": "american"}
+        params = {"apiKey": LIVE_DATA_API_KEY, "regions": "us,eu", "markets": "h2h,totals", "oddsFormat": "american", "commenceTimeFrom": "in-play"}
         try:
             time.sleep(1.5)
             url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
