@@ -127,6 +127,7 @@ def parse_market_odds(bookmaker_data, market_key="h2h"):
             for outcome in market.get("outcomes", []):
                 odds_map[outcome.get("name")] = outcome.get("price")
     return odds_map
+    
 
 def get_live_pitch_telemetry(home_team, away_team):
     url = "https://api-sports.io"
