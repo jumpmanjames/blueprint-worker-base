@@ -499,61 +499,56 @@ def execute_global_pitch_sweeps():
     leagues_with_data = 0
     total_matches_found = 0
     
-    # 1. Direct Live In-Play Pipeline checking across multi-provider name aliases
-    try:
-        live_url = "https://api-sports.io"
-        live_headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
-        live_res = requests.get(live_url, headers=live_headers, params={"live": "all"}, timeout=10)
+    # 1. Direct Live In-Play Pipeline loop driving through explicit catalog API IDs
+    for sport_item in MASTER_BOOKIE_CATALOG:
+        league_key = sport_item["key"]
+        league_title = sport_item["title"]
+        league_api_id = sport_item.get("api_id")
         
-        if live_res.status_code == 200:
-            fixtures_list = live_res.json().get("response", [])
-            for fx in fixtures_list:
-                api_league_name = fx.get("league", {}).get("name", "").lower()
-                api_league_id = fx.get("league", {}).get("id")
-                
-                # Cross-reference the live game using your hard-earned multi-alias parameters list
-                target_league_item = None
-                for item in MASTER_BOOKIE_CATALOG:
-                    if item["api_id"] == api_league_id or any(alias in api_league_name for alias in item["aliases"]):
-                        target_league_item = item
-                        break
+        try:
+            live_url = "https://api-sports.io"
+            live_headers = {"x-rapidapi-key": API_FOOTBALL_KEY, "x-rapidapi-host": "v3.football.api-sports.io"}
+            # Querying direct by individual mapped league ID to bypass global endpoint filtering traps
+            live_res = requests.get(live_url, headers=live_headers, params={"live": "all", "league": league_api_id}, timeout=10)
+            
+            if live_res.status_code == 200:
+                fixtures_list = live_res.json().get("response", [])
+                if fixtures_list:
+                    leagues_with_data += 1
+                    for fx in fixtures_list:
+                        total_matches_found += 1
+                        fx_id = fx.get("fixture", {}).get("id")
+                        h_name = fx.get("teams", {}).get("home", {}).get("name", "Home")
+                        a_name = fx.get("teams", {}).get("away", {}).get("name", "Away")
                         
-                if not target_league_item:
-                    continue  # Skip any matches outside your custom 48-league blueprint catalog
-                    
-                total_matches_found += 1
-                leagues_with_data += 1
-                h_name = fx.get("teams", {}).get("home", {}).get("name", "Home")
-                a_name = fx.get("teams", {}).get("away", {}).get("name", "Away")
-                
-                # Run real-time telemetry extraction rules
-                live_data = get_live_pitch_telemetry(h_name, a_name, target_league_item["api_id"])
-                if live_data.get("active"):
-                    l_home_odds = live_data.get("live_home_odds")
-                    l_away_odds = live_data.get("live_away_odds")
-                    l_draw_odds = live_data.get("live_draw_odds")
-                    current_minute = live_data.get("minute", 0)
-                    current_score = live_data.get("score", "0-0")
-                    
-                    # Track entries into your continuous, infinite target tracking layout
-                    if is_any_valid_market_selection(l_home_odds):
-                        all_discovered_favorites.append({"team": h_name, "odds": int(str(l_home_odds).replace("+","")), "match": f"{h_name} vs {a_name}", "league": target_league_item["title"]})
-                    if is_any_valid_market_selection(l_away_odds):
-                        all_discovered_favorites.append({"team": a_name, "odds": int(str(l_away_odds).replace("+","")), "match": f"{h_name} vs {a_name}", "league": target_league_item["title"]})
-                    
-                    # SYSTEMS 1 & 7: Volatility and Late-Stage Pressure Window Alerts
-                    if current_minute >= 45 and current_score == "0-0":
-                        implied_p = convert_american_to_implied(l_home_odds)
-                        interval_alert = (
-                            f"\U0001F3CE **CORVETTE FUND BLUEPRINT \u2014 LIVE STRATEGY SIGNAL**\n\n"
-                            f"* **The Play Target:** Live Value entry window active for **{h_name} vs {a_name}**\n"
-                            f"* **Live American Odds:** Home Winner ML: {l_home_odds} | Draw: {l_draw_odds} | Away Winner ML: {l_away_odds}\n"
-                            f"* **The Value Discrepancy Math:** Implied Chance {implied_p:.1%} vs Live Volatility Corridor.\n"
-                            f"* **Why the data holds the edge:** Game clock verified at {live_data.get('clock')} mark sitting at balanced scoreline ({current_score}). Live attack velocity registers {live_data.get('dang_attacks_home')} Dangerous Attacks."
-                        )
-                        send_discord_payload(interval_alert)
-    except Exception as api_sports_err:
-        print(f"[-] Live sports collection engine execution fault: {api_sports_err}")
+                        # Run real-time telemetry extraction rules
+                        live_data = get_live_pitch_telemetry(fx_id)
+                        if live_data.get("active"):
+                            l_home_odds = live_data.get("live_home_odds")
+                            l_away_odds = live_data.get("live_away_odds")
+                            l_draw_odds = live_data.get("live_draw_odds")
+                            current_minute = live_data.get("minute", 0)
+                            current_score = live_data.get("score", "0-0")
+                            
+                            # Track entries into your continuous, infinite target tracking layout
+                            if is_any_valid_market_selection(l_home_odds):
+                                all_discovered_favorites.append({"team": h_name, "odds": int(str(l_home_odds).replace("+","")), "match": f"{h_name} vs {a_name}", "league": league_title})
+                            if is_any_valid_market_selection(l_away_odds):
+                                all_discovered_favorites.append({"team": a_name, "odds": int(str(l_away_odds).replace("+","")), "match": f"{h_name} vs {a_name}", "league": league_title})
+                            
+                            # SYSTEMS 1 & 7: Volatility and Late-Stage Pressure Window Alerts
+                            if current_minute >= 45 and current_score == "0-0":
+                                implied_p = convert_american_to_implied(l_home_odds)
+                                interval_alert = (
+                                    f"\U0001F3CE **CORVETTE FUND BLUEPRINT \u2014 LIVE STRATEGY SIGNAL**\n\n"
+                                    f"* **The Play Target:** Live Value entry window active for **{h_name} vs {a_name}**\n"
+                                    f"* **Live American Odds:** Home Winner ML: {l_home_odds} | Draw: {l_draw_odds} | Away Winner ML: {l_away_odds}\n"
+                                    f"* **The Value Discrepancy Math:** Implied Chance {implied_p:.1%} vs Live Volatility Corridor.\n"
+                                    f"* **Why the data holds the edge:** Game clock verified at {live_data.get('clock')} mark sitting at balanced scoreline ({current_score}). Live attack velocity registers {live_data.get('dang_attacks_home')} Dangerous Attacks."
+                                )
+                                send_discord_payload(interval_alert)
+        except Exception as api_sports_err:
+            print(f"[-] Live sports collection league ID sweep fault for {league_title}: {api_sports_err}")
 
     # 2. Pre-Match Backup Pipeline via The Odds API
     for sport_item in MASTER_BOOKIE_CATALOG:
