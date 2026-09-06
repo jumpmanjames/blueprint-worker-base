@@ -68,12 +68,7 @@ BOOKMAKER_PRIORITY = ['bet365', 'draftkings', 'fanduel', 'thescorebet', 'hardroc
 
 SPORT_KEY_MAP = {le['id']: f'soccer_{le["name"].lower().replace(" ", "_")}' for le in LEAGUE_CATALOG}
 
-INTERNAL_STATE_MEMORY = {
-    'cached_schedule': {},
-    'top_20_favorites': [],
-    'system_6_futures': [],
-    'last_summary_time': 0
-}
+INTERNAL_STATE_MEMORY = {'cached_schedule': {}, 'top_20_favorites': [], 'system_6_futures': [], 'last_summary_time': 0}
 
 def init_ledger():
     if not os.path.exists(LEDGER_FILE):
@@ -83,7 +78,7 @@ def init_ledger():
 def log_to_ledger(match_id, league, teams, odds_h2h, system_tag):
     init_ledger()
     with open(LEDGER_FILE, mode='a', newline='', encoding='utf-8') as f:
-        csv.writer(f).writerow([datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S'), match_id, league, teams, odds_h2h, system_tag, 'PENDING_LIVE_AUDIT'])
+        csv.writer(f).writerow([time.strftime('%Y-%m-%d %H:%M:%S'), match_id, league, teams, odds_h2h, system_tag, 'PENDING_LIVE_AUDIT'])
 
 def send_discord_payload(content_str):
     if not DISCORD_WEBHOOK_URL:
@@ -114,123 +109,116 @@ def fetch_odds_for_market(sport_key):
         return None
 
 def evaluate_live_inplay_telemetry(fixture_id, match_details, h2h_odds_matrix):
-    # System 7 Live Telemetry Hooks
-    # Query live stats for this specific fixture from API-Football
-    res = query_api_football('fixtures/statistics', {'fixture': fixture_id})
-    stats_summary = "Live Stats: Not Available"
-    
-    if res and res.get('response'):
-        teams_stats = res['response']
-        # Extract fields to fulfill Row 1, Row 1.5, Row 2, Row 3 rules
-        stats_summary = ""
-        for team_data in teams_stats:
-            t_name = team_data['team']['name']
-            s_dict = {item['type']: item['value'] for item in team_data['statistics'] if item['value'] is not None}
-            
-            xg = s_dict.get('expected_goals', 'N/A')
-            shots_on = s_dict.get('Shots on Goal', 0)
-            shots_off = s_dict.get('Shots off Goal', 0)
-            total_shots = shots_on + shots_off
-            attacks = s_dict.get('Attacks', 0)
-            dang_attacks = s_dict.get('Dangerous Attacks', 0)
-            possession = s_dict.get('Ball Possession', '50%')
-            corners = s_dict.get('Corner Kicks', 0)
-            red_cards = s_dict.get('Red Cards', 0)
-            yellow_cards = s_dict.get('Yellow Cards', 0)
-            
-            stats_summary += f"\n**{t_name}** -> xG: {xg} | ShotsOn/Total: {shots_on}/{total_shots} | Att/DangAtt: {attacks}/{dang_attacks} | Poss: {possession} | Corners: {corners} | Cards(R/Y): {red_cards}/{yellow_cards}"
-
-    teams = f'{match_details["home_team"]} v {match_details["away_team"]}'
+    teams = f"{match_details['home_team']} v {match_details['away_team']}"
     selected_book, odds_data = 'N/A', 'N/A'
     for target_book in BOOKMAKER_PRIORITY:
         book_match = next((b for b in h2h_odds_matrix if b.get('key') == target_book), None)
         if book_match:
             selected_book = book_match.get('title', target_book)
             markets = book_match.get('markets', [])
-            if markets:
-                for m in markets:
-                    if m.get('key') == 'h2h':
-                        odds_data = ' | '.join([f'{o["name"]}: {o["price"]}' for o in m.get('outcomes', [])])
-                        break
+            if markets and 'outcomes' in markets:
+                odds_data = ' | '.join([f"{o['name']}: {o['price']}" for o in markets.get('outcomes', [])])
             break
+            
+    # System 7 Real-time Metric Hook Integration
+    stats_res = query_api_football('fixtures/statistics', {'fixture': fixture_id})
+    live_metrics_summary = "Live Stats Unvailable"
+    if stats_res and stats_res.get('response'):
+        teams_stats = stats_res['response']
+        stat_pieces = []
+        for t_stat in teams_stats:
+            team_name = t_stat['team']['name']
+            s_map = {s['type']: s['value'] for s in t_stat['statistics'] if s['value'] is not None}
+            shots_on = s_map.get('Shots on Goal', 0)
+            shots_off = s_map.get('Shots off Goal', 0)
+            att = s_map.get('Attacks', 0)
+            dang_att = s_map.get('Dangerous Attacks', 0)
+            pos = s_map.get('Ball Possession', '0%')
+            corners = s_map.get('Corner Kicks', 0)
+            yc = s_map.get('Yellow Cards', 0)
+            rc = s_map.get('Red Cards', 0)
+            stat_pieces.append(f"{team_name} [Shots: {shots_on}/{shots_off+shots_on} | Att: {att} | DangAtt: {dang_att} | Poss: {pos} | Corners: {corners} | Cards Y:{yc} R:{rc}]")
+        live_metrics_summary = " \n ".join(stat_pieces)
     
-    report = f'🏎️ **CORVETTE FUND BLUEPRINT — SYSTEM SELECTION TRIGGERED**\n\nMatch Context: {teams} ({match_details["league_name"]})\nVerified Market Price Consensus ({selected_book}):\n• Full-Time 1X2 Moneyline: {odds_data}\n• Target Edge Metric: Implied vs True Probability Margin Met\n{stats_summary}'
+    report = f"🏎️ **CORVETTE FUND BLUEPRINT — SYSTEM SELECTION TRIGGERED**\n\nMatch Context: {teams} ({match_details['league_name']})\nLive Telemetry: {live_metrics_summary}\n\nVerified Market Price Consensus ({selected_book}):\n• Full-Time 1X2 Moneyline: {odds_data}\n• Target Edge Metric: Implied vs True Probability Margin Met"
     send_discord_payload(report)
     log_to_ledger(fixture_id, match_details['league_name'], teams, odds_data, 'SYSTEM_BLUEPRINT_SELECTION')
 
 def execute_1_time_midnight_sync():
-    now_utc = datetime.datetime.now(datetime.timezone.utc)
-    now_ct = now_utc - datetime.timedelta(hours=5)
-    target_season = 2026
+    current_time_utc = datetime.datetime.now(datetime.timezone.utc)
+    # Target central time normalization
+    central_offset = datetime.timedelta(hours=-5)
+    current_date_central = (current_time_utc + central_offset).date()
+    
+    current_year = current_date_central.year
     fresh_map = {}
     
-    print(f'[{now_ct.strftime("%H:%M:%S")}] Starting Paid-Tier Full League Schedule RAM Ingestion for season {target_season}...')
-    
-    fav_list = []
-    fut_list = []
+    print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Starting Dynamic Season Paid-Tier Local Memory RAM Ingestion...")
     
     for league in LEAGUE_CATALOG:
         try:
-            time.sleep(0.2) # Throttled safely for Pro Plan limits
-            res = query_api_football('fixtures', {'league': league['id'], 'season': target_season})
-            if not res or not res.get('response'):
-                continue
-                
-            fixtures = res['response']
-            odds_pool = fetch_odds_for_market(SPORT_KEY_MAP.get(league['id']))
+            time.sleep(0.5)
+            # Fetch current live schedules using dynamic current season windowing
+            res = query_api_football('fixtures', {'league': league['id'], 'season': current_year})
             
-            for item in fixtures:
-                f_id = item['fixture']['id']
-                home, away = item['teams']['home']['name'], item['teams']['away']['name']
-                match_status = item['fixture']['status']['short']
-                match_date_str = item['fixture']['date'] # ISO string from API
+            # Fallback check for dynamic crossover seasons (e.g. 2026-2027 starting years)
+            if not res or not res.get('response'):
+                res = query_api_football('fixtures', {'league': league['id'], 'season': current_year - 1})
                 
-                # Convert ISO match time to datetime object
-                try:
-                    match_dt = datetime.datetime.fromisoformat(match_date_str.replace('Z', '+00:00'))
-                except ValueError:
-                    continue
+            if res and res.get('response'):
+                fixtures = res['response']
+                odds_pool = fetch_odds_for_market(SPORT_KEY_MAP.get(league['id']))
                 
-                # Standardize to local memory arrays
-                match_odds = []
-                if odds_pool:
-                    match_o = next((o for o in odds_pool if o['home_team'] == home or o['away_team'] == away), None)
-                    if match_o:
-                        match_odds = match_o.get('bookmakers', [])
-                
-                fresh_map[f_id] = {
-                    'fixture_id': f_id,
-                    'home_team': home,
-                    'away_team': away,
-                    'league_name': league['name'],
-                    'commence_time': match_date_str,
-                    'status_short': match_status,
-                    'bookmakers_odds': match_odds
-                }
-                
-                # Operational multi-horizon filtering based on day offsets
-                delta_days = (match_dt.date() - now_utc.date()).days
-                entry_str = f"🔹 {home} vs {away} ({league['name']}) - {match_dt.strftime('%m/%d %H:%M')} UTC"
-                
-                if 0 <= delta_days <= 2:
-                    fav_list.append(entry_str)
-                elif 2 < delta_days <= 7:
-                    fut_list.append(entry_str)
+                for item in fixtures:
+                    match_time_utc = datetime.datetime.strptime(item['fixture']['date'], "%Y-%m-%dT%H:%M:%S%z")
+                    match_time_central = match_time_utc + central_offset
+                    match_date_central = match_time_central.date()
                     
+                    delta_days = (match_date_central - current_date_central).days
+                    
+                    # Core requirement: Parse full upcoming calendar without silent timeout drops
+                    if delta_days < 0 or delta_days > 7:
+                        continue
+                        
+                    f_id = item['fixture']['id']
+                    home, away = item['teams']['home']['name'], item['teams']['away']['name']
+                    match_odds = []
+                    if odds_pool:
+                        match_o = next((o for o in odds_pool if o['home_team'] == home or o['away_team'] == away), None)
+                        if match_o:
+                            match_odds = match_o.get('bookmakers', [])
+                            
+                    meta_payload = {
+                        'fixture_id': f_id, 
+                        'home_team': home, 
+                        'away_team': away, 
+                        'league_name': league['name'], 
+                        'commence_time': match_time_central.strftime('%Y-%m-%d %H:%M:%S'), 
+                        'status_short': item['fixture']['status']['short'], 
+                        'bookmakers_odds': match_odds,
+                        'delta_days': delta_days
+                    }
+                    
+                    fresh_map[f_id] = meta_payload
+                    
+                    # Populate the horizon tracking queues
+                    entry_str = f"🔹 {home} vs {away} ({league['name']}) - Time: {meta_payload['commence_time']} CT"
+                    if 0 <= delta_days <= 2:
+                        INTERNAL_STATE_MEMORY['top_20_favorites'].append(entry_str)
+                    elif 2 < delta_days <= 7:
+                        INTERNAL_STATE_MEMORY['system_6_futures'].append(entry_str)
+                        
         except Exception as e:
-            print(f'[-] Shielded lookup error on league folder {league["id"]}: {e}')
+            print(f"[-] Shielded directory sync failure on league {league['id']}: {e}")
             continue
             
     INTERNAL_STATE_MEMORY['cached_schedule'] = fresh_map
-    INTERNAL_STATE_MEMORY['top_20_favorites'] = fav_list[:20]
-    INTERNAL_STATE_MEMORY['system_6_futures'] = fut_list[:20]
-    
-    print(f'[{datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M:%S")}] Ingestion Complete. Cached {len(fresh_map)} active game horizons into local memory arrays.')
+    print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Ingestion Complete. Cached {len(fresh_map)} active game horizons into local memory arrays.")
     
     if INTERNAL_STATE_MEMORY['top_20_favorites']:
-        send_discord_payload('📆 **TOP 20 DAILY FAVORITES BOARD (0-2 DAYS)**\n' + '\n'.join(INTERNAL_STATE_MEMORY['top_20_favorites']))
+        send_discord_payload('📆 **TOP 20 DAILY FAVORITES BOARD (0-2 DAYS)**\n' + '\n'.join(INTERNAL_STATE_MEMORY['top_20_favorites'][:20]))
     if INTERNAL_STATE_MEMORY['system_6_futures']:
-        send_discord_payload('🔮 **TOP 20 FUTURES BOARD (2-7 DAYS)**\n' + '\n'.join(INTERNAL_STATE_MEMORY['system_6_futures']))
+        send_discord_payload('🔮 **TOP 20 FUTURES BOARD (2-7 DAYS)**\n' + '\n'.join(INTERNAL_STATE_MEMORY['system_6_futures'][:20]))
 
 def initialize_automation_pipeline():
     init_ledger()
@@ -240,12 +228,13 @@ def initialize_automation_pipeline():
     
     while True:
         try:
-            now_ct = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)
+            now = datetime.datetime.now()
             active_count = len(INTERNAL_STATE_MEMORY.get('cached_schedule', {}))
-            print(f'[{now_ct.strftime("%H:%M:%S")}] Heartbeat Loop Active: Scanning {active_count} soccer game arrays across priority bookmakers (Bet365/DraftKings)...')
+            print(f"[{now.strftime('%H:%M:%S')}] Heartbeat Loop Active: Scanning {active_count} soccer game arrays across priority bookmakers (Bet365/DraftKings)...")
             
-            # Recalibrate daily at midnight CT
-            if now_ct.hour == 0 and now_ct.minute <= 4:
+            if now.hour == 0 and now.minute <= 4:
+                INTERNAL_STATE_MEMORY['top_20_favorites'] = []
+                INTERNAL_STATE_MEMORY['system_6_futures'] = []
                 execute_1_time_midnight_sync()
                 time.sleep(300)
                 
@@ -255,30 +244,32 @@ def initialize_automation_pipeline():
             
             active = list(INTERNAL_STATE_MEMORY.get('cached_schedule', {}).items())
             for f_id, meta in active:
-                # Data Age-Out Execution: delete from scanning loop if match long concluded
-                if meta['status_short'] in ['FT', 'AET', 'PEN', 'AMD']:
-                    if f_id in INTERNAL_STATE_MEMORY['cached_schedule']:
-                        del INTERNAL_STATE_MEMORY['cached_schedule'][f_id]
-                    continue
-                    
                 try:
-                    time.sleep(0.5)
+                    # Data Age-Out Execution: Drop long concluded matches to avoid RAM bloat
+                    if meta['status_short'] in ['FT', 'AET', 'PEN', 'TBD', 'CANS']:
+                        INTERNAL_STATE_MEMORY['cached_schedule'].pop(f_id, None)
+                        continue
+                        
+                    time.sleep(1.0)
                     check = query_api_football('fixtures', {'id': f_id})
                     if check and check.get('response'):
                         data = check['response'][0] if isinstance(check['response'], list) else check['response']
                         current_status = data['fixture']['status']['short']
+                        
+                        # Update status inside memory block
                         INTERNAL_STATE_MEMORY['cached_schedule'][f_id]['status_short'] = current_status
                         
                         if current_status in ['1H', 'HT', '2H', 'ET', 'P', 'LIVE']:
                             evaluate_live_inplay_telemetry(f_id, meta, meta.get('bookmakers_odds', []))
+                            
                 except Exception as inner_err:
-                    print(f'[-] Iteration bypass logged on fixture {f_id}: {inner_err}')
+                    print(f"[-] Iteration bypass logged on fixture {f_id}: {inner_err}")
                     continue
             time.sleep(180)
         except KeyboardInterrupt:
             break
         except Exception as main_err:
-            print(f'[-] Loop pacing safety trigger hit: {main_err}')
+            print(f"[-] Loop pacing safety trigger hit: {main_err}")
             time.sleep(30)
 
 if __name__ == '__main__':
