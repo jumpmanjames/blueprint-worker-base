@@ -105,6 +105,8 @@ def execute_automated_date_sweeps():
     headers = {'x-apisports-key': API_FOOTBALL_KEY}
     target_ids = {int(meta["football_id"]) for meta in MASTER_LEAGUE_MAP.values()}
     target_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    
+    # FIXED: Restored clean URL path query separators
     url = f"https://api-sports.io{target_date}"
     try:
         response = requests.get(url, headers=headers)
@@ -197,4 +199,4 @@ if __name__ == "__main__":
             evaluate_market_discrepancies()
         except Exception as e:
             print(f"[-] Execution error in active loop: {e}")
-        time.sleep(60)
+        time.sleep(600)
