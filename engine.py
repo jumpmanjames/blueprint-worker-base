@@ -9,7 +9,7 @@ import requests
 API_FOOTBALL_KEY = os.environ.get("API_FOOTBALL_KEY", "")
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 
-# MASTER LEAGUE MAP (PART 1 OF 3)
+# MASTER LEAGUE MAP - ALL 51 LEAGUES PRESERVED NATIVELY
 MASTER_LEAGUE_MAP = {
     "premier_league": {"football_id": "39", "name": "English Premier League"},
     "la_liga": {"football_id": "140", "name": "Spain La Liga"},
@@ -23,10 +23,7 @@ MASTER_LEAGUE_MAP = {
     "serie_b": {"football_id": "136", "name": "Italy Serie B"},
     "bundesliga_2": {"football_id": "79", "name": "Germany 2. Bundesliga"},
     "ligue_2": {"football_id": "62", "name": "France Ligue 2"},
-    "belgian_pro_league": {"football_id": "144", "name": "Belgium Pro League"}
-}
-# MASTER LEAGUE MAP (PART 2 OF 3)
-MASTER_LEAGUE_MAP.update({
+    "belgian_pro_league": {"football_id": "144", "name": "Belgium Pro League"},
     "scottish_premiership": {"football_id": "179", "name": "Scotland Premiership"},
     "austrian_bundesliga": {"football_id": "218", "name": "Austria Bundesliga"},
     "swiss_super_league": {"football_id": "207", "name": "Switzerland Super League"},
@@ -42,10 +39,7 @@ MASTER_LEAGUE_MAP.update({
     "copa_sudamericana": {"football_id": "11", "name": "Copa Sudamericana"},
     "champions_league": {"football_id": "2", "name": "UEFA Champions League"},
     "europa_league": {"football_id": "3", "name": "UEFA Europa League"},
-    "conference_league": {"football_id": "848", "name": "UEFA Conference League"}
-})
-# MASTER LEAGUE MAP (PART 3 OF 3)
-MASTER_LEAGUE_MAP.update({
+    "conference_league": {"football_id": "848", "name": "UEFA Conference League"},
     "j1_league": {"football_id": "98", "name": "Japan J1 League"},
     "k_league_1": {"football_id": "292", "name": "South Korea K League 1"},
     "a_league": {"football_id": "351", "name": "Australia A-League"},
@@ -68,11 +62,10 @@ MASTER_LEAGUE_MAP.update({
     "copa_america": {"football_id": "9", "name": "Copa America"},
     "euros": {"football_id": "4", "name": "UEFA Euro"},
     "world_cup": {"football_id": "1", "name": "FIFA World Cup"}
-})
+}
 
 GLOBAL_FIXTURE_CALENDAR = {}
 ALREADY_NOTIFIED_SELECTIONS = set()
-
 def send_discord_message(payload):
     if not DISCORD_WEBHOOK_URL:
         print("[-] Skipping Discord notification: Webhook URL not configured.")
@@ -102,15 +95,13 @@ def send_heartbeat():
 def execute_automated_date_sweeps():
     global GLOBAL_FIXTURE_CALENDAR
     print("🧠 Initializing background calendar sync... Sweeping rolling 7-day schedule arrays into server memory.")
-    headers = {
-        'x-apisports-key': API_FOOTBALL_KEY,
-        'x-rapidapi-host': 'v3.football.api-sports.io'
-    }
+    
+    # FIXED: Direct subscription token initialization (Single Auth Header)
+    headers = {'x-apisports-key': API_FOOTBALL_KEY}
     target_ids = {int(meta["football_id"]) for meta in MASTER_LEAGUE_MAP.values()}
     target_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    url = f"https://api-sports.io{target_date}"
     
-    # FIXED: Restored clean URL path query separators
-    url = f"https://api-sports.io/?date={target_date}"
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
@@ -129,8 +120,8 @@ def execute_automated_date_sweeps():
             print(f"[-] Date sweep API request failed with status: {response.status_code}")
     except Exception as e:
         print(f"[-] Error during date sweep extraction: {e}")
-
 def parse_live_stats(api_football_fixture_id):
+    # FIXED: Direct subscription token initialization (Single Auth Header)
     headers = {'x-apisports-key': API_FOOTBALL_KEY}
     url = f"https://api-sports.io{api_football_fixture_id}"
     try:
@@ -154,6 +145,8 @@ def evaluate_market_discrepancies():
     if not GLOBAL_FIXTURE_CALENDAR:
         print("[-] Skipping live check sequence: Calendar database cache is currently empty.")
         return
+        
+    # FIXED: Direct subscription token initialization (Single Auth Header)
     headers = {'x-apisports-key': API_FOOTBALL_KEY}
     url = "https://api-sports.io"
     try:
@@ -202,4 +195,4 @@ if __name__ == "__main__":
             evaluate_market_discrepancies()
         except Exception as e:
             print(f"[-] Execution error in active loop: {e}")
-        time.sleep(600)
+        time.sleep(60)
