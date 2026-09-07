@@ -113,7 +113,7 @@ def execute_automated_date_sweeps():
     base_date = datetime.datetime.now()
     
     # Track allowed tournament IDs for efficient filtering inside the day arrays
-    target_ids = {meta["football_id"] for meta in MASTER_LEAGUE_MAP.values()}
+    target_ids = {int(meta["football_id"]) for meta in MASTER_LEAGUE_MAP.values()}
     
     for i in range(7):
         target_date = (base_date + datetime.timedelta(days=i)).strftime("%Y-%m-%d")
