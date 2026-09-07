@@ -36,7 +36,9 @@ MASTER_LEAGUE_MAP = {
     "brasileirao_serie_a": {"football_id": "71", "name": "Brazil Serie A"},
     "argentina_primera": {"football_id": "128", "name": "Argentina Primera Division"},
     "copa_libertadores": {"football_id": "13", "name": "Copa Libertadores"},
-    "copa_sudamericana": {"football_id": "11", "name": "Copa Sudamericana"},
+    "copa_sudamericana": {"football_id": "11", "name": "Copa Sudamericana"}
+}
+MASTER_LEAGUE_MAP.update({
     "champions_league": {"football_id": "2", "name": "UEFA Champions League"},
     "europa_league": {"football_id": "3", "name": "UEFA Europa League"},
     "conference_league": {"football_id": "848", "name": "UEFA Conference League"},
@@ -62,10 +64,11 @@ MASTER_LEAGUE_MAP = {
     "copa_america": {"football_id": "9", "name": "Copa America"},
     "euros": {"football_id": "4", "name": "UEFA Euro"},
     "world_cup": {"football_id": "1", "name": "FIFA World Cup"}
-}
+})
 
 GLOBAL_FIXTURE_CALENDAR = {}
 ALREADY_NOTIFIED_SELECTIONS = set()
+
 def send_discord_message(payload):
     if not DISCORD_WEBHOOK_URL:
         print("[-] Skipping Discord notification: Webhook URL not configured.")
@@ -91,12 +94,11 @@ def send_heartbeat():
         }]
     }
     send_discord_message(payload)
-
 def execute_automated_date_sweeps():
     global GLOBAL_FIXTURE_CALENDAR
     print("🧠 Initializing background calendar sync... Sweeping rolling 7-day schedule arrays into server memory.")
     
-    # FIXED: Direct subscription token initialization (Single Auth Header)
+    # Direct account single authentication header
     headers = {'x-apisports-key': API_FOOTBALL_KEY}
     target_ids = {int(meta["football_id"]) for meta in MASTER_LEAGUE_MAP.values()}
     target_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -120,8 +122,8 @@ def execute_automated_date_sweeps():
             print(f"[-] Date sweep API request failed with status: {response.status_code}")
     except Exception as e:
         print(f"[-] Error during date sweep extraction: {e}")
+
 def parse_live_stats(api_football_fixture_id):
-    # FIXED: Direct subscription token initialization (Single Auth Header)
     headers = {'x-apisports-key': API_FOOTBALL_KEY}
     url = f"https://api-sports.io{api_football_fixture_id}"
     try:
@@ -146,7 +148,6 @@ def evaluate_market_discrepancies():
         print("[-] Skipping live check sequence: Calendar database cache is currently empty.")
         return
         
-    # FIXED: Direct subscription token initialization (Single Auth Header)
     headers = {'x-apisports-key': API_FOOTBALL_KEY}
     url = "https://api-sports.io"
     try:
