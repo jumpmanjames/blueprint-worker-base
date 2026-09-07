@@ -80,7 +80,7 @@ def send_discord_message(payload):
     headers = {"Content-Type": "application/json"}
     try:
         response = requests.post(DISCORD_WEBHOOK_URL, data=json.dumps(payload), headers=headers)
-        if response.status_code in:
+        if response.status_code == 204 or response.status_code == 200:
             return True
         else:
             print(f"[-] Discord returned error status: {response.status_code}")
@@ -98,6 +98,7 @@ def send_heartbeat():
         }]
     }
     send_discord_message(payload)
+
 def execute_automated_date_sweeps():
     global GLOBAL_FIXTURE_CALENDAR
     print("🧠 Initializing background calendar sync... Sweeping rolling 7-day schedule arrays into server memory.")
