@@ -37,6 +37,7 @@ MASTER_LEAGUE_MAP = {
     "argentina_primera": {"football_id": "128", "name": "Argentina Primera Division"},
     "copa_libertadores": {"football_id": "13", "name": "Copa Libertadores"},
     "copa_sudamericana": {"football_id": "11", "name": "Copa Sudamericana"}
+}
     # MASTER LEAGUE MAP (PART 2 OF 2 - ALL 51 LEAGUES PRESERVED)
     "champions_league": {"football_id": "2", "name": "UEFA Champions League"},
     "europa_league": {"football_id": "3", "name": "UEFA Europa League"},
