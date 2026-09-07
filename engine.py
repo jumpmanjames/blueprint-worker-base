@@ -9,7 +9,7 @@ import requests
 API_FOOTBALL_KEY = os.environ.get("API_FOOTBALL_KEY", "")
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 
-# MASTER LEAGUE MAP (PART 1 OF 2 - ALL 51 LEAGUES PRESERVED)
+# MASTER LEAGUE MAP (PART 1 OF 3)
 MASTER_LEAGUE_MAP = {
     "premier_league": {"football_id": "39", "name": "English Premier League"},
     "la_liga": {"football_id": "140", "name": "Spain La Liga"},
@@ -23,7 +23,10 @@ MASTER_LEAGUE_MAP = {
     "serie_b": {"football_id": "136", "name": "Italy Serie B"},
     "bundesliga_2": {"football_id": "79", "name": "Germany 2. Bundesliga"},
     "ligue_2": {"football_id": "62", "name": "France Ligue 2"},
-    "belgian_pro_league": {"football_id": "144", "name": "Belgium Pro League"},
+    "belgian_pro_league": {"football_id": "144", "name": "Belgium Pro League"}
+}
+# MASTER LEAGUE MAP (PART 2 OF 3)
+MASTER_LEAGUE_MAP.update({
     "scottish_premiership": {"football_id": "179", "name": "Scotland Premiership"},
     "austrian_bundesliga": {"football_id": "218", "name": "Austria Bundesliga"},
     "swiss_super_league": {"football_id": "207", "name": "Switzerland Super League"},
@@ -36,12 +39,13 @@ MASTER_LEAGUE_MAP = {
     "brasileirao_serie_a": {"football_id": "71", "name": "Brazil Serie A"},
     "argentina_primera": {"football_id": "128", "name": "Argentina Primera Division"},
     "copa_libertadores": {"football_id": "13", "name": "Copa Libertadores"},
-    "copa_sudamericana": {"football_id": "11", "name": "Copa Sudamericana"}
-}
-    # MASTER LEAGUE MAP (PART 2 OF 2 - ALL 51 LEAGUES PRESERVED)
+    "copa_sudamericana": {"football_id": "11", "name": "Copa Sudamericana"},
     "champions_league": {"football_id": "2", "name": "UEFA Champions League"},
     "europa_league": {"football_id": "3", "name": "UEFA Europa League"},
-    "conference_league": {"football_id": "848", "name": "UEFA Conference League"},
+    "conference_league": {"football_id": "848", "name": "UEFA Conference League"}
+})
+# MASTER LEAGUE MAP (PART 3 OF 3)
+MASTER_LEAGUE_MAP.update({
     "j1_league": {"football_id": "98", "name": "Japan J1 League"},
     "k_league_1": {"football_id": "292", "name": "South Korea K League 1"},
     "a_league": {"football_id": "351", "name": "Australia A-League"},
@@ -64,7 +68,7 @@ MASTER_LEAGUE_MAP = {
     "copa_america": {"football_id": "9", "name": "Copa America"},
     "euros": {"football_id": "4", "name": "UEFA Euro"},
     "world_cup": {"football_id": "1", "name": "FIFA World Cup"}
-}
+})
 
 GLOBAL_FIXTURE_CALENDAR = {}
 ALREADY_NOTIFIED_SELECTIONS = set()
@@ -97,20 +101,16 @@ def send_heartbeat():
 def execute_automated_date_sweeps():
     global GLOBAL_FIXTURE_CALENDAR
     print("🧠 Initializing background calendar sync... Sweeping rolling 7-day schedule arrays into server memory.")
-    
     headers = {'x-apisports-key': API_FOOTBALL_KEY}
     target_ids = {int(meta["football_id"]) for meta in MASTER_LEAGUE_MAP.values()}
-    
     target_date = datetime.datetime.now().strftime("%Y-%m-%d")
     url = f"https://api-sports.io{target_date}"
-    
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             data = response.json()
             fixtures = data.get("response", [])
             print(f"📡 API-Football responded with {len(fixtures)} total games for date {target_date}.")
-            
             count = 0
             for fix in fixtures:
                 l_id = fix.get('league', {}).get('id')
@@ -131,7 +131,6 @@ def parse_live_stats(api_football_fixture_id):
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             data = response.json().get("response", [])
-            # FIXED: Safely indices home [0] and away [1] metrics out of paid list data structures
             if len(data) >= 2:
                 stats_home = {item['type']: item['value'] for item in data[0].get('statistics', []) if item.get('value') is not None}
                 stats_away = {item['type']: item['value'] for item in data[1].get('statistics', []) if item.get('value') is not None}
@@ -149,7 +148,6 @@ def evaluate_market_discrepancies():
     if not GLOBAL_FIXTURE_CALENDAR:
         print("[-] Skipping live check sequence: Calendar database cache is currently empty.")
         return
-
     headers = {'x-apisports-key': API_FOOTBALL_KEY}
     url = "https://api-sports.io"
     try:
@@ -157,19 +155,15 @@ def evaluate_market_discrepancies():
         if response.status_code != 200:
             return
         live_fixtures = response.json().get("response", [])
-        
         for lf in live_fixtures:
             f_id = lf.get('fixture', {}).get('id')
             if f_id in GLOBAL_FIXTURE_CALENDAR:
                 home = lf.get('teams', {}).get('home', {}).get('name', 'Home')
                 away = lf.get('teams', {}).get('away', {}).get('name', 'Away')
                 live_clock = lf.get('fixture', {}).get('status', {}).get('elapsed', 0)
-                
-                # FIXED: De-duplication validation key prevents duplicate alerts on 60-second sweeps
                 notification_key = f"{f_id}_live_edge"
                 if notification_key not in ALREADY_NOTIFIED_SELECTIONS:
                     stats = parse_live_stats(f_id) or {"dangerous_attacks_home": 48, "shots_on_target_home": 3}
-                    
                     description_text = (
                         f"**Match Context:** {home} vs. {away} — Live {live_clock}th Min on 1xBet\n"
                         f"**Verified Market Consensus Lines**\n"
@@ -181,12 +175,11 @@ def evaluate_market_discrepancies():
                         f"4. **Hierarchy Mismatch:** Verified stature dominance confirms validation. **STATUS: PASS** 🟢\n"
                         f"5. **Live Threat Matrix Edge:** System 7 live telemetry registers deep pressure with {stats['dangerous_attacks_home']} Dangerous Attacks and {stats['shots_on_target_home']} Shots on Target."
                     )
-                    
                     payload = {
                         "embeds": [{
                             "title": "🏎️ CORVETTE FUND BLUEPRINT — MARKET ANALYSIS SYSTEM",
                             "color": 3447003,
-                            "description": description_text[:4000] # Safe Character Slicing Cap Boundary Limits
+                            "description": description_text[:4000]
                         }]
                     }
                     if send_discord_message(payload):
@@ -198,7 +191,6 @@ if __name__ == "__main__":
     print("🏎️ Corvette Fund Production Day-Sweep Layer Online.")
     send_heartbeat()
     execute_automated_date_sweeps()
-    
     while True:
         try:
             evaluate_market_discrepancies()
