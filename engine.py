@@ -107,7 +107,7 @@ def execute_automated_date_sweeps():
     target_date = datetime.datetime.now().strftime("%Y-%m-%d")
     
     # FIXED: Restored clean URL path query separators
-    url = f"https://api-sports.io{target_date}"
+    url = f"https://api-sports.io/?date={target_date}"
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
