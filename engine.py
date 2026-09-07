@@ -102,7 +102,10 @@ def send_heartbeat():
 def execute_automated_date_sweeps():
     global GLOBAL_FIXTURE_CALENDAR
     print("🧠 Initializing background calendar sync... Sweeping rolling 7-day schedule arrays into server memory.")
-    headers = {'x-apisports-key': API_FOOTBALL_KEY}
+    headers = {
+        'x-apisports-key': API_FOOTBALL_KEY,
+        'x-rapidapi-host': 'v3.football.api-sports.io'
+    }
     target_ids = {int(meta["football_id"]) for meta in MASTER_LEAGUE_MAP.values()}
     target_date = datetime.datetime.now().strftime("%Y-%m-%d")
     
