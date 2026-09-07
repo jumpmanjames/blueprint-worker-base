@@ -102,7 +102,7 @@ def execute_automated_date_sweeps():
     headers = {'x-apisports-key': API_FOOTBALL_KEY}
     target_ids = {int(meta["football_id"]) for meta in MASTER_LEAGUE_MAP.values()}
     target_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    url = f"https://api-sports.io{target_date}"
+    url = f"https://api-sports.io/fixtures?date={target_date}"
     
     try:
         response = requests.get(url, headers=headers)
